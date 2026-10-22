@@ -1,0 +1,43 @@
+order: 16
+id: evilscholar
+name: PIPEDREAM - EVILSCHOLAR Modbus
+family: PIPEDREAM / INCONTROLLER (2022)
+year: '2022'
+protocol: UDP 27127 (MODICON discovery) + Modbus TCP :502
+target: OT Network + PLC-7 Heating District ({heating}:502)
+desc: 'EVILSCHOLAR: UDP 27127 multicast discovers Schneider MODICON PLCs (Dragos-verified IOC), then Modbus
+  TCP attacks the heating district controller. Real packets on the OT network.'
+color: '#66bb6a'
+briefing:
+- PIPEDREAM EVILSCHOLAR - Schneider MODICON Discovery + Modbus Attack
+- 'Dragos-verified IOC: UDP 27127 multicast to 239.255.60.1.'
+- ''
+- 'WHAT WE ARE DOING:'
+- 1. UDP 27127 multicast (MODICON discovery - real packet, Wireshark visible)
+- 2. TCP :1740 Codesys port scan on all OT hosts
+- 3. Modbus FC03 read - enumerate holding registers (PLC-7 slave=11)
+- 4. Modbus FC06 write - set temperature setpoint to 0 (EVILSCHOLAR attack)
+- 5. Persistence loop - re-assert override every 2 seconds
+- ''
+- ICS MITRE ATT&CK
+- T0840  Network Connection Enumeration (UDP 27127)
+- T0855  Unauthorized Command Message (Modbus FC06)
+- T0836  Modify Parameter (temperature setpoint)
+cmd:
+- $PY
+- $SIM/evilscholar_simulation.py
+- --target
+- '{heating}'
+- --port
+- '502'
+- --network
+- 192.168.1.0/24
+- --duration
+- '15'
+watch:
+  plc: heating
+  proto: modbus
+  unit: 11
+  kind: heating
+  restore: heating
+it_phase: $SCRIPTS/pipedream_it_phase.py

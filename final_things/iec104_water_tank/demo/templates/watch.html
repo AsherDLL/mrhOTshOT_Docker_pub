@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ attack.name }} - Visualizer · mrhOTshOT</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/watch.css') }}">
+</head>
+<body class="viz-body">
+  <header class="viz-top">
+    <div class="viz-top-left">
+      <a class="btn btn-ghost btn-sm" href="{{ url_for('index') }}">← Dashboard</a>
+      <div class="viz-titles">
+        <h1 class="viz-proc" id="viz-proc">{{ plan.label or attack.name }}</h1>
+        <div class="viz-sub" id="viz-sub">{{ attack.name }}{% if not plan.noviz %} &middot; {{ plan.plc }} &middot; {{ (plan.proto or '')|upper }}{% endif %}</div>
+      </div>
+    </div>
+    {% if not plan.noviz %}
+    <div class="viz-top-right">
+      <span class="lamp" id="viz-chip-lamp"></span>
+      <span class="viz-status s-offline" id="viz-status">-</span>
+    </div>
+    {% endif %}
+  </header>
+
+  {% if plan.noviz %}
+  <div class="viz-noviz">
+    <div class="card viz-noviz-card">
+      <h2>No process view</h2>
+      <p><strong>{{ attack.name }}</strong> is an IIoT initial-access / reconnaissance attack - it
+      compromises an edge device or gathers intelligence, it does not manipulate a physical process,
+      so there is nothing to visualize here.</p>
+      <p class="muted">Run it and watch its output from the dashboard console.</p>
+    </div>
+  </div>
+  {% else %}
+  <div class="viz-banner" id="viz-banner"></div>
+  <main class="viz-main">
+    <section class="card viz-hmi">
+      <div class="viz-hmi-head"><span class="viz-hmi-tag">OPERATOR HMI</span><span>{{ plan.label }}</span></div>
+      <div id="viz-stage" class="viz-stage"></div>
+    </section>
+    <aside class="viz-side">
+      <div class="viz-group">
+        <div class="viz-group-title">Simulation</div>
+        <button class="btn btn-run" id="viz-start">▶ Start simulation</button>
+        <button class="btn btn-ghost" id="viz-reset">↻ Reset target</button>
+      </div>
+      <div class="viz-group viz-group-atk">
+        <div class="viz-group-title">Attack</div>
+        <button class="btn btn-atk" id="viz-launch">▶ Launch attack</button>
+        <button class="btn btn-warn hidden" id="viz-pause">⏸ Pause attack</button>
+        <button class="btn btn-run hidden" id="viz-resume">▶ Resume attack</button>
+        <button class="btn btn-stop hidden" id="viz-stop">■ Stop attack</button>
+        <label class="viz-cap" title="Record this attack's packets to a .pcap - download it from the dashboard Captures tab">
+          <input type="checkbox" id="viz-capture"> Capture traffic (.pcap)
+        </label>
+      </div>
+      <div class="viz-group viz-group-log" id="viz-log-group">
+        <div class="viz-group-title"><span class="lamp" id="viz-log-lamp"></span> Activity
+          <span class="viz-hint" id="viz-log-hint">idle</span>
+          <button class="viz-log-exp" id="viz-log-expand" title="Expand">&#10530;</button>
+        </div>
+        <pre class="console-body" id="viz-log"></pre>
+      </div>
+    </aside>
+    <section class="card viz-io" id="viz-io" hidden>
+      <div class="viz-io-head">
+        <span class="viz-io-tag">I/O MAP</span>
+        <span class="viz-io-ep" id="viz-io-ep"></span>
+        <span class="viz-io-hint">registers / coils / points this attack reads (R) and writes (W)</span>
+      </div>
+      <div class="viz-io-scroll">
+        <table class="viz-io-table">
+          <thead><tr><th>R/W</th><th>address</th><th>type</th><th>point</th><th class="viz-io-val">live value</th></tr></thead>
+          <tbody id="viz-io-body"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+  {% endif %}
+
+  <script>
+    window.WATCH = {
+      id: {{ attack.id | tojson }},
+      name: {{ attack.name | tojson }},
+      kind: {{ plan.kind | tojson }},
+      noviz: {{ (plan.noviz or false) | tojson }},
+      proto: {{ (plan.proto or '') | tojson }},
+      plc: {{ (plan.plc or '') | tojson }},
+      io: {{ (plan.io or {}) | tojson }},
+      stream: {% if not plan.noviz %}{{ url_for('watch_stream', attack_id=attack.id) | tojson }}{% else %}null{% endif %}
+    };
+  </script>
+  {% if not plan.noviz %}
+  {% for m in viz_modules %}
+  <script src="{{ url_for('static', filename='js/viz/' + m) }}"></script>
+  {% endfor %}
+  <script src="{{ url_for('static', filename='js/visualizer.js') }}"></script>
+  {% endif %}
+</body>
+</html>

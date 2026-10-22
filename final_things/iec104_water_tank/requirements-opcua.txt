@@ -1,0 +1,2 @@
+# OPC-UA Protocol Dependencies
+asyncua>=1.1.8

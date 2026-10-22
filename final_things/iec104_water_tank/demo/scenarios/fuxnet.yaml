@@ -1,0 +1,67 @@
+order: 7
+id: fuxnet
+name: Fuxnet
+family: Fuxnet (2024)
+year: '2024'
+protocol: M-Bus + IEC-104
+target: PLC-9 Moscollector M-Bus Gateway ({sensors}:5000) + PLC-1 ({water}:2404)
+desc: 'Attributed to Ukraine''s Blackjack group. Floods M-Bus frames to brick sensor gateways (destroyed
+  87,000 sensors in Moscow). Optional combo attack: while operators are blinded by dead sensors, IEC-104
+  commands overflow the tank.'
+color: '#ff5722'
+briefing:
+- REAL MALWARE - Fuxnet (Blackjack group, Ukraine, 2024)
+- Targeted Moscollector - Moscow's underground sensor infrastructure.
+- Destroyed ~87,000 M-Bus sensors and gateways by flooding malformed frames
+- to corrupt gateway firmware. Left Moscow's sewage monitoring blind.
+- Combined sensor destruction with process attacks for maximum disruption.
+- ''
+- WHAT WE ARE DOING
+- 'Phase 1 - M-Bus Sensor Destruction:'
+- '  1. TCP connect to M-Bus gateway (port 5000)'
+- '  2. SND_NKE initialization - enumerate sensors on bus'
+- '  3. REQ_UD2 polling - read all sensor data to map the network'
+- '  4. SND_UD flood with malformed frames - corrupt gateway firmware'
+- '  5. Invalid checksums + oversized payloads → gateway crash'
+- 'Phase 2 - Combo Attack (while sensors are dead):'
+- '  1. Operators have no sensor readings - completely blind'
+- '  2. IEC-104 commands to overflow tank - no alarm data visible'
+- '  3. Catastrophic damage proceeds undetected'
+- 'VISIBLE IMPACT: Sensor readings go to zero/error, then tank fills'
+- ''
+- ICS MITRE ATT&CK
+- T0809  Data Destruction (M-Bus firmware corruption)
+- T0826  Loss of Availability (sensor network destroyed)
+- T0855  Unauthorized Command Message (IEC-104 combo)
+- T0835  Manipulate I/O Image (corrupt sensor readings)
+cmd:
+- $PY
+- $SIM/fuxnet/fuxnet_exec.py
+- --router
+- '{router}'
+- --target
+- '{sensors}'
+- --port
+- '5000'
+- --combo-target
+- '{water}'
+- --duration
+- '180'
+cmd_lab:
+- $PY
+- $SIM/fuxnet/fuxnet_exec.py
+- --direct
+- --target
+- '{sensors}'
+- --port
+- '5000'
+- --combo-target
+- '{water}'
+- --duration
+- '30'
+watch:
+  plc: sensors
+  proto: mbus
+  kind: sensors
+  label: Moscollector Sensor Gateway
+it_phase: $SCRIPTS/fuxnet_it_phase.py

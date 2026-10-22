@@ -1,0 +1,68 @@
+order: 3
+id: industroyer2
+name: Industroyer2
+family: Industroyer / CrashOverride (2022)
+year: '2022'
+protocol: IEC 60870-5-104
+target: PLC-2 Power Substation ({power}:2404)
+desc: Used to attack Ukraine's power grid in April 2022. Targets the power substation IEC-104 RTU - enumerates
+  all IOAs, disables protections, injects C_SC_NA_1 commands to trip breakers and cause a substation blackout.
+color: '#ff9800'
+briefing:
+- REAL MALWARE - Industroyer2 / CrashOverride (Sandworm/GRU, 2022)
+- Targeted Ukraine power substations April 2022. Hard-coded IOA addresses,
+- time-triggered execution. Scanned all IOAs, sent C_SC_NA_1 and C_DC_NA_1
+- commands to trip breakers simultaneously. Caused 2-hour blackout in Kyiv.
+- Industroyer (2016) additionally had DNP3, IEC 61850, and Modbus modules.
+- ''
+- WHAT WE ARE DOING
+- 1. Enumerate IOAs via ASDU interrogation (Common Address scanning)
+- 2. Validate target - confirm IEC-104 server responds with STARTDT
+- '3. Disable protections: IOA 303 = manual mode (auto control off)'
+- '4. Trip breakers: IOA 300/301 commands (substation breaker IOAs)'
+- '5. Historical signature: rapid C_SC_NA_1 to IOAs 1100-1404 (power grid IOAs)'
+- '6. Persistence loop: re-send every 5s for attack duration'
+- 'VISIBLE IMPACT: Substation breakers tripped, power outage simulated'
+- ''
+- ICS MITRE ATT&CK
+- T0855  Unauthorized Command Message (C_SC_NA_1 injection)
+- T0858  Change Credential (disable protection relay)
+- T0879  Damage to Property (substation blackout)
+- T0813  Denial of Control
+it_phase_args:
+- --hmi-ip
+- '{hmi}'
+- --hmi-user
+- operator
+- --hmi-pass
+- labpass123
+- --skip-router
+cmd:
+- $PY
+- $SIM/industroyer2/simulation.py
+- --target
+- '{power}'
+- --water-target
+- '{water}'
+- --port
+- '2404'
+- --duration
+- '90'
+- --hmi-ip
+- '{hmi}'
+cmd_lab:
+- $PY
+- $SIM/industroyer2/industroyer2_ot.py
+- --target
+- '{power}'
+- --port
+- '2404'
+- --duration
+- '90'
+- --substation
+watch:
+  plc: power
+  proto: iec104
+  kind: power
+  restore: power
+it_phase: $SIM/industroyer2/initial_access.py

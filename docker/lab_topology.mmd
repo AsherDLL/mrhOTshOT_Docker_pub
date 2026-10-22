@@ -1,0 +1,47 @@
+flowchart LR
+  %% ===================== ATTACKER / OPERATIONS =====================
+  subgraph ATT["ATTACKER / OPERATIONS"]
+    direction TB
+    CON["mrhOTshOT Console<br/>127.0.0.1:8888<br/>launches attacks"]
+    CAL["Caldera C2<br/>host :8889"]
+    AGT["sandcat agent<br/>group: red"]
+    RTR["Edge router<br/>:8080 - initial access"]
+    FUXA["FUXA HMI<br/>:1881 - monitoring"]
+    AGT -->|beacon| CAL
+  end
+
+  BUS{{"otlab bridge<br/>172.21.0.0/16<br/>flat L2 segment"}}
+  TAP["EXTERNAL TAP<br/>tap mode, allow any/any<br/>passive - separate device"]
+
+  %% ===================== TARGETS =====================
+  subgraph TGT["TARGETS - field controllers (L1) + SIS"]
+    direction TB
+    HEAT["plc-heating<br/>Modbus :502<br/>FrostyGoop"]
+    CENT["plc-centrifuge<br/>S7comm :102<br/>Stuxnet"]
+    DNP["plc-dnp3<br/>DNP3 :20000<br/>Industroyer"]
+    SENS["plc-sensors<br/>M-Bus :5000<br/>Fuxnet"]
+    HVAC["plc-hvac<br/>BACnet :47808<br/>HVAC override"]
+    GAS["plc-gas<br/>OPC-UA :4840<br/>Pipedream"]
+    WAT["plc-water<br/>IEC-104 :2404"]
+    POW["plc-power<br/>IEC-61850 :8102"]
+    BOIL["plc-boiler<br/>ABB :5020"]
+    SIS["sis<br/>TriStation :1502<br/>TRITON / SIS"]
+  end
+
+  %% ===================== WIRING =====================
+  CON -->|"attack + live read"| BUS
+  CAL -->|"OT abilities"| BUS
+  RTR -->|"pivot"| BUS
+  FUXA -.->|"poll"| BUS
+  BUS --> HEAT & CENT & DNP & SENS & HVAC & GAS & WAT & POW & BOIL & SIS
+  BUS -.->|"mirror"| TAP
+  WAT -.->|"monitors"| SIS
+
+  classDef atk fill:#3a1416,stroke:#e5484d,stroke-width:1px,color:#f5d0d2;
+  classDef tgt fill:#122029,stroke:#37b6c4,stroke-width:1px,color:#d4edf2;
+  classDef bus fill:#2a2410,stroke:#e8a33d,stroke-width:2px,color:#f3dfb0;
+  classDef tap fill:#0f241a,stroke:#46b87a,stroke-width:1px,color:#c9ecd7;
+  class CON,CAL,AGT,RTR,FUXA atk;
+  class HEAT,CENT,DNP,SENS,HVAC,GAS,WAT,POW,BOIL,SIS tgt;
+  class BUS bus;
+  class TAP tap;

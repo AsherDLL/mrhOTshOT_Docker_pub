@@ -1,0 +1,60 @@
+order: 8
+id: cosmicenergy
+name: CosmicEnergy
+family: CosmicEnergy / PIEHOP+LIGHTWORK (2023)
+year: '2023'
+esxi_only: true
+protocol: MSSQL xp_cmdshell → IEC 60870-5-104
+target: ICONICS MSSQL ({iconics}:1433) → PLC-1 ({water}:2404)
+desc: 'Mandiant 2023: PIEHOP (r3_iec104_control.exe) connects to MSSQL historian via xp_cmdshell, drops
+  LIGHTWORK (OT_T855_IEC104_GR.exe), executes it. LIGHTWORK fires C_IC_NA_1 then C_SC_NA_1 to 8 hardcoded
+  IOAs. Likely Rostelecom-Solar red-team tool.'
+color: '#2196f3'
+briefing:
+- REAL MALWARE - CosmicEnergy / PIEHOP+LIGHTWORK (Mandiant, May 2023)
+- Attributed to Rostelecom-Solar Solar Polygon red-team, NOT Sandworm.
+- Found in VirusTotal - not confirmed deployed in the wild.
+- ''
+- PIEHOP (r3_iec104_control.exe) - PyInstaller Python
+- '  SHA256: 358f0f8c23acea82c5f75d6a2de37b6bea7785ed0e32c41109c217c48bf16010'
+- '  Connects to MSSQL server with pre-obtained credentials'
+- '  Drops LIGHTWORK via xp_cmdshell (base64 + certutil decode)'
+- '  Executes LIGHTWORK, then deletes the binary (anti-forensics)'
+- ''
+- LIGHTWORK (OT_T855_IEC104_GR.exe) - C++ binary
+- '  SHA256: 740e0d2fba550308344b2fb0e5ecfebdf09329bdcfaa909d3357ad4fe5552532'
+- '  Step 1: C_IC_NA_1 (station interrogation - read RTU state)'
+- '  Step 2: C_SC_NA_1 to 8 hardcoded IOA addresses (rapid toggle)'
+- '  Step 3: C_CS_NA_1 (clock sync - disrupts time-stamped relay events)'
+- ''
+- KILL CHAIN (this lab - verified end-to-end)
+- 1. Router compromise (cmd injection :8080 or SSH bruteforce admin:admin)
+- '2. PIEHOP: router → ICONICS MSSQL (192.168.1.20:1433) sa:sa123'
+- '   xp_cmdshell → NT SERVICE\MSSQL$SQLEXPRESS'
+- '   PowerShell WriteAllBytes → OT_T855_IEC104_GR.py (base64)'
+- 3. LIGHTWORK executes from ICONICS → PLC-1 water treatment :2404
+- '4. C_IC_NA_1 interrogation → C_SC_NA_1: MANUAL mode + inlet OPEN + outlet CLOSE'
+- '   → tank overflows → HMI water tank shows flood/explosion state'
+- 5. C_SC_NA_1 × 8 real LIGHTWORK IOAs (0-7) → authentic CosmicEnergy telemetry
+- 6. C_CS_NA_1 false clock sync → del /f /q (anti-forensics)
+- ''
+- ICS MITRE ATT&CK
+- T0855  Unauthorized Command Message (C_SC_NA_1 × 8 IOAs)
+- T0813  Denial of Control (hit-and-run, no persistence)
+- T0836  Modify Parameter (C_CS_NA_1 false clock sync)
+cmd:
+- $PY
+- $SIM/cosmicenergy/piehop.py
+- --mssql
+- '{iconics}'
+- --target
+- '{water}'
+- --port
+- '2404'
+- --no-cleanup
+watch:
+  plc: power
+  proto: iec104
+  kind: power
+  restore: power
+it_phase: $SCRIPTS/cosmicenergy_it_phase.py

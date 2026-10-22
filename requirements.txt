@@ -1,0 +1,42 @@
+# mrhOTshOT - consolidated dependencies (offensive work + local victim targets)
+# Installed into a single in-repo virtualenv (.venv) by ./setup_all.sh.
+# Everything lives inside the repo, so cleanup is ./cleanup.sh or rm -rf the repo.
+
+# --- OT/ICS protocol libraries: run local victim servers AND protocol attacks ---
+c104>=1.15.0            # IEC 60870-5-104 (water-tank PLC, Industroyer/CrashOverride)
+pymodbus>=3.5,<3.7     # Modbus TCP (FrostyGoop). <3.7: 3.8+ rewrote the datastore
+                       # API and breaks ModbusSequentialDataBlock(0, ...) in server/modbus_adapter.py
+python-snap7>=1.3      # Siemens S7comm (Stuxnet)
+asyncua>=1.0.0         # OPC-UA server + PIPEDREAM fingerprint phase
+opcua>=0.98.13         # python-opcua: PIPEDREAM OPC-UA attack phase (opcua_attack.py)
+crcmod>=1.7            # TriStation CRC (TRITON/TRISIS)
+scapy>=2.5.0           # raw packet crafting / GOOSE / sniffing
+bacpypes3>=0.0.98      # BACnet/IP server adapter (building_hvac target)
+psutil>=5.9            # cleanup_ports.py port/process management
+# pymssql intentionally omitted: only CosmicEnergy used it, and that scenario is
+# esxi-only (no MSSQL container). Its deps belong on the ESXi attacker VM, not here.
+
+# --- Offensive / post-exploitation (IT attack chain; needs a target host) ---
+impacket>=0.11.0       # SMB / WMI / psexec / secretsdump
+pypykatz>=0.6.8        # LSASS / credential parsing
+pywinrm>=0.4.3         # WinRM remote execution
+paramiko>=3.4.0        # SSH (tunnels, lateral movement)
+smbprotocol>=1.12.0    # SMB file transfer
+cryptography>=41.0.0
+# pwntools>=4.11.0     # exploit-dev helpers - heavy; uncomment if you want it
+
+# --- Web victim / demo / phishing servers ---
+flask>=3.0.0
+werkzeug>=3.0.0
+requests>=2.31.0
+pypdf>=4.0.0           # Chatbot (Beta): extract text from uploaded PDF reports
+openai>=1.40           # Chatbot (Beta): OpenAI-COMPATIBLE client - also drives the
+                       # Moonshot/Kimi, Qwen, OpenRouter and custom presets. Replaces a
+                       # hand-rolled requests+SSE client; adds structured output,
+                       # tool calling and retry/backoff.
+
+# --- Utilities used across the simulators ---
+pyyaml>=6.0
+colorama>=0.4.6
+tabulate>=0.9.0
+python-dateutil>=2.8.2

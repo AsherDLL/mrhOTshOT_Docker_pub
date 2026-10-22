@@ -1,0 +1,60 @@
+order: 6
+id: stuxnet
+name: Stuxnet
+family: Stuxnet (2010)
+year: '2010'
+protocol: Siemens S7comm
+target: PLC-4 Natanz Centrifuges ({mfg}:102)
+desc: The first nation-state cyberweapon to physically destroy industrial equipment. Exploits 4 Windows
+  CVEs (LNK, Print Spooler, SMB, WinCC SQL), then writes float speed setpoints to IR-1 centrifuge S7 data
+  blocks - causing rotor failure while a rootkit masks the attack from HMI operators.
+color: '#4caf50'
+briefing:
+- REAL MALWARE - Stuxnet (NSA/Unit 8200, 2010)
+- The first cyberweapon to cause physical destruction at industrial scale.
+- Targeted 3 IR-1 centrifuge cascades at Natanz Fuel Enrichment Plant, Iran.
+- Destroyed 1,000+ centrifuges over 18 months - completely undetected.
+- ''
+- IT PHASE - 4 REAL CVEs
+- 'MS10-046 (CVE-2010-2568): LNK autorun via USB drop → initial access on Win7 WS'
+- 'MS10-061 (CVE-2010-2729): Print Spooler RCE → peer-to-peer LAN spread'
+- 'MS08-067 (CVE-2008-4250): SMB netapi worm → network propagation to OT segment'
+- 'CVE-2010-2772:            WinCC MSSQL sa:2WSXcder → PLC tag DB exfiltration'
+- 'Artifacts: mrxnet.sys + mrxcls.sys kernel rootkits (Event 7045 HIGH)'
+- '           ~WTR4141.tmp + ~WTR4132.tmp loader files (Event 4663)'
+- ''
+- OT PHASE - CENTRIFUGE ATTACK
+- '1. S7 COTP connect + SZL fingerprint: confirm S7-315 centrifuge PLC'
+- '2. Read DB4 baseline: verify IR-1 centrifuges at 1007 Hz'
+- '3. DB890 activation: stuxnet_active=True → HMI rootkit engaged'
+- '   HMI operators see 1007 Hz regardless of actual speed'
+- '4. Phase 1 overspeed: DB3 speed = 1410 Hz (all 3 centrifuges)'
+- '   Rotor stress accumulates at maximum rate'
+- '5. Phase 2 understeed: DB3 speed = 2 Hz (near-stop oscillation)'
+- '   Bearing lubrication failure - rapid additional stress'
+- 6. 3 oscillation cycles → rotor_stress → 100% → DESTROYED
+- '7. Rootkit deactivate: HMI now reveals actual damage'
+- 'VISIBLE IMPACT: HMI shows ROTOR FAILURE, cracked centrifuge visuals'
+- ''
+- ICS MITRE ATT&CK
+- T0843  Program Download (S7 DB3 setpoint injection)
+- T0836  Modify Parameter (centrifuge speed Hz - IEEE 754 float)
+- T0856  Spoof Reporting Message (DB890 rootkit masks DB4 readings)
+- T0879  Damage to Property (IR-1 rotor destruction)
+- T0862  Supply Chain Compromise (stolen code signing certs)
+cmd:
+- $PY
+- $SIM/stuxnet/simulation.py
+- --target
+- '{mfg}'
+- --port
+- '102'
+- --duration
+- '60'
+watch:
+  plc: centrifuge
+  proto: s7
+  kind: centrifuge
+  label: Natanz Centrifuge Cascade
+  restore: centrifuge
+it_phase: $SCRIPTS/stuxnet_it_phase.py

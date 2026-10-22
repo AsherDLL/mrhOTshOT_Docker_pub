@@ -1,0 +1,6 @@
+# Siemens S7 Protocol Dependencies
+setuptools>=65.0.0
+# Install from local wheel file (download from PyPI if not present):
+# pip download python-snap7==1.1 --platform macosx_10_9_universal2 --only-binary=:all:
+# Then install: pip install python_snap7-1.1-py3-none-macosx_10_9_universal2.whl
+python-snap7==1.1

@@ -1,0 +1,20 @@
+TagName,Address,DataType,TypeID,Access,Comment
+WaterLevel,100,Int16,M_ME_NB_1,R,Water level 0-100%
+Pressure,101,Int16,M_ME_NB_1,R,Tank pressure (bar)
+Temperature,102,Int16,M_ME_NB_1,R,Water temperature (C)
+InletValveStatus,200,Bool,M_SP_NA_1,R,Inlet valve open/closed
+OutletValveStatus,201,Bool,M_SP_NA_1,R,Outlet valve open/closed
+PumpStatus,202,Bool,M_SP_NA_1,R,Pump running/stopped
+AutoModeStatus,203,Bool,M_SP_NA_1,R,Auto/Manual mode
+AlarmOverflow,204,Bool,M_SP_NA_1,R,Overflow alarm
+AlarmLowLevel,205,Bool,M_SP_NA_1,R,Low level alarm
+AlarmHighPressure,206,Bool,M_SP_NA_1,R,High pressure alarm
+TankExploded,207,Bool,M_SP_NA_1,R,Tank rupture
+SISTripped,208,Bool,M_SP_NA_1,R,Safety system trip
+InletValveCmd,300,Bool,C_SC_NA_1,RW,Open/Close inlet valve
+OutletValveCmd,301,Bool,C_SC_NA_1,RW,Open/Close outlet valve
+PumpCmd,302,Bool,C_SC_NA_1,RW,Start/Stop pump
+AutoModeCmd,303,Bool,C_SC_NA_1,RW,Auto/Manual switch
+SISTripCmd,304,Bool,C_SC_NA_1,RW,SIS trip command
+InletValveSetpoint,400,Float,C_SE_NC_1,RW,Inlet valve position 0-100%
+OutletValveSetpoint,401,Float,C_SE_NC_1,RW,Outlet valve position 0-100%

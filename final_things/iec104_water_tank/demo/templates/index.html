@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>mrhOTshOT - adversary emulation</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+</head>
+<body>
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="brand-mark">◢◤</span>
+      <div>
+        <div class="brand-name">mrhOTshOT</div>
+        <div class="brand-sub">adversary emulation</div>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <button class="nav-item active" data-view="attacks"><span class="nav-key">A</span> Attacks</button>
+      <button class="nav-item" data-view="targets"><span class="nav-key">T</span> Targets</button>
+      <button class="nav-item" data-view="custom"><span class="nav-key">C</span> Custom Target</button>
+      <button class="nav-item" data-view="captures"><span class="nav-key">P</span> Captures</button>
+      <button class="nav-item" data-view="detections"><span class="nav-key">D</span> Detections <span class="beta-tag">Beta</span><span class="nav-badge hidden" id="det-badge"></span></button>
+      <button class="nav-item" data-view="agent"><span class="nav-key">B</span> Chatbot <span class="beta-tag">Beta</span></button>
+      <button class="nav-item" data-view="caldera"><span class="nav-key">K</span> Caldera</button>
+    </nav>
+
+    <div class="profile-box">
+      <label>Operating profile</label>
+      <select id="profile-select">
+        {% set labels = {"esxi": "ESXi VM lab", "docker": "Docker lab", "local": "Local (host ports)"} %}
+        {% for p in profiles %}
+        <option value="{{ p }}" {% if p == profile %}selected{% endif %}>{{ labels.get(p, p) }}</option>
+        {% endfor %}
+      </select>
+      <div class="lab-line" id="lab-line"><span class="lamp" id="lab-lamp"></span><span id="lab-text">-</span></div>
+    </div>
+
+    <div class="sidebar-foot">
+      <a id="hmi-link" class="btn btn-ghost hidden" target="_blank" rel="noopener" title="FUXA - the operator's live SCADA screen (Level-2 monitoring)">◳ Operator SCADA ↗</a>
+      <button id="hmi-seed" class="btn btn-ghost hidden" title="Load / reload the operator HMI views (heating + power substation) into FUXA. Run once after a fresh lab.">↻ Load HMI views</button>
+      <button id="reset-btn" class="btn btn-ghost">↺ Restore PLCs</button>
+      <a href="{{ url_for('logout') }}" class="btn btn-ghost">⎋ Sign out</a>
+      <p class="foot-meta">profile <b id="foot-profile">{{ profile }}</b></p>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <header class="topbar">
+      <div>
+        <h1 id="view-title">Attack Surface</h1>
+        <p class="muted" id="view-sub">{{ attacks|length }} techniques · profile <b>{{ profile }}</b></p>
+      </div>
+      <div class="topbar-right">
+        <span class="lamp lamp-ok"></span><span class="muted" id="conn-label">online</span>
+      </div>
+    </header>
+
+    <!-- Attacks view -->
+    <section id="view-attacks" class="view">
+      <div class="grid">
+        {% for a in attacks %}
+        <article class="card" data-id="{{ a.id }}">
+          <div class="card-head">
+            <span class="card-idx">{{ '%02d' % loop.index }}</span>
+            <span class="lamp" data-status="{{ a.id }}"></span>
+          </div>
+          <h3 class="card-name">{{ a.name }}</h3>
+          <div class="card-meta">
+            <span class="tag tag-proto">{{ a.protocol }}</span>
+            <span class="family">{{ a.family }}</span>
+          </div>
+          <p class="desc">{{ a.desc }}</p>
+          <div class="target-line"><span class="lbl">TGT</span><span>{{ a.target }}</span></div>
+          <div class="card-actions">
+            <button class="btn btn-run btn-toggle" data-id="{{ a.id }}" data-state="idle">▶ Launch</button>
+            {% if a.id not in noviz %}<a class="btn btn-viz" href="{{ url_for('watch_page', attack_id=a.id) }}" target="_blank" rel="noopener" title="Open a live visualizer of the process this attack targets">Visualize ↗</a>{% endif %}
+            <button class="btn btn-ghost btn-brief" data-id="{{ a.id }}">Briefing</button>
+            <label class="cap-toggle" title="Record this attack's packets to a .pcap - find it in the Captures tab">
+              <input type="checkbox" class="cap-cb"> Capture traffic
+            </label>
+          </div>
+        </article>
+        {% endfor %}
+      </div>
+    </section>
+
+    <!-- Custom Target view -->
+    <section id="view-custom" class="view hidden">
+      <p class="muted panel-note">Pick a protocol and a module, set what to write where
+        (value &rarr; address / coil / register), and fire at any target you specify.</p>
+      <div class="custom-form">
+        <div class="field"><label>Protocol</label><select id="custom-proto"></select></div>
+        <div class="field"><label title="Which module / attack to run">Module</label><select id="custom-module"></select></div>
+        <div class="field">
+          <label>Target</label>
+          <div class="endpoint-row">
+            <input type="text" id="custom-ip" placeholder="Domain or IP address">
+            <span class="endpoint-colon">:</span>
+            <input type="text" id="custom-port" class="t-port-input" title="Port">
+          </div>
+        </div>
+      </div>
+      <div class="custom-form" id="custom-options"><!-- module option fields, rendered by JS --></div>
+      <div class="custom-form">
+        <div class="field"><label title="Once = a single command; Repeat = re-issue it (spam)">Run mode</label>
+          <select id="custom-mode">
+            <option value="once">Once (single command)</option>
+            <option value="repeat">Repeat (spam)</option>
+          </select></div>
+        <div class="field hidden" id="custom-interval-field"><label>Every (s)</label><input type="text" id="custom-interval" class="t-port-input" value="5"></div>
+        <div class="field hidden" id="custom-duration-field"><label title="How long a repeat/scenario run keeps going">Run time (s)</label><input type="text" id="custom-duration" class="t-port-input" value="15"></div>
+        <div class="field field-inline"><label class="cap-toggle" title="Record packets to a .pcap - find it in the Captures tab"><input type="checkbox" id="custom-cap"> Capture traffic</label></div>
+        <button id="custom-run" class="btn btn-run">▶ Run</button>
+        <button id="custom-stop" class="btn btn-stop hidden">■ Stop</button>
+        <span id="custom-msg" class="muted"></span>
+      </div>
+    </section>
+
+    <!-- Targets view -->
+    <section id="view-targets" class="view hidden">
+      <p class="muted panel-note">Edit a target's address/port and save - persisted to
+        <code>config/targets.yaml</code> and applied immediately. Empty profile defaults restore the static routes.</p>
+      <div class="table-wrap">
+        <table class="targets-table">
+          <thead><tr><th>Target</th><th>Protocols</th><th>IP / host</th><th>Primary port</th><th></th></tr></thead>
+          <tbody id="targets-body"><!-- filled by JS --></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Captures view -->
+    <section id="view-captures" class="view hidden">
+      <p class="muted panel-note">Tick <b>Capture traffic</b> on any attack (or a Custom Target run)
+        to record its packets to a <code>.pcap</code>. Files are listed here to download, and also
+        saved on disk under <code id="cap-path">demo/captures/</code>. Open them in Wireshark.</p>
+      <div class="table-wrap">
+        <table class="targets-table">
+          <thead><tr><th>Attack</th><th>Captured</th><th>Size</th><th></th></tr></thead>
+          <tbody id="captures-body"><!-- filled by JS --></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Caldera view -->
+    <section id="view-caldera" class="view hidden">
+      <p class="muted panel-note">MITRE Caldera with the OT plugins (Modbus / DNP3 / BACnet /
+        IEC-61850) runs on the lab network. Use its full UI to build adversary profiles and run
+        operations against the PLC containers - login is <b>root&nbsp;/&nbsp;root</b>.</p>
+      <div class="caldera-panel">
+        <div class="caldera-stat"><span class="lamp" id="caldera-lamp"></span><span id="caldera-status">checking…</span></div>
+        <div class="caldera-grid" id="caldera-grid"></div>
+        <a id="caldera-link" class="btn btn-run" target="_blank" rel="noopener">◳ Open Caldera ↗</a>
+      </div>
+    </section>
+
+    <!-- Detections view (Beta) -->
+    <section id="view-detections" class="view hidden">
+      <p class="muted panel-note">A passive <b>Suricata</b> sensor taps the lab's OT network and raises an
+        alert the moment an attack's control or command traffic crosses the wire. Alerts stream live below
+        as you launch attacks. Start it with <code>make sensor-up</code>, or bring your own detection engine
+        (see <code>docker/sensor.yml</code>). Rules live in <code>docker/suricata/rules/ot.rules</code>.</p>
+      <div class="det-bar">
+        <span class="lamp" id="det-lamp"></span><span id="det-status">checking…</span>
+        <button id="det-clear" class="btn btn-ghost btn-sm">Clear</button>
+      </div>
+      <div class="table-wrap">
+        <table class="targets-table">
+          <thead><tr><th>Time</th><th>Severity</th><th>Signature</th><th>SID</th><th>Proto</th><th>Source</th><th>Target</th></tr></thead>
+          <tbody id="detections-body"><!-- filled live by SSE --></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Agent view (Beta) -->
+    <section id="view-agent" class="view hidden">
+      <p class="muted panel-note agent-note"><span class="beta-tag">Beta</span>
+        A chat assistant that knows this lab. Ask how to run things or use Caldera, drop in a report, PDF, or
+        pcap, and it will draft simulations, payloads, or detection rules for you to review and copy. Provider
+        keys stay on the server, and your conversation is kept in this browser until you clear it.</p>
+      <div class="agent-grid">
+        <div class="card agent-config">
+          <div class="agent-row">
+            <label>Provider</label>
+            <select id="agent-provider"></select>
+          </div>
+          <div class="agent-row">
+            <label>Model <span class="muted">(editable)</span></label>
+            <input type="text" id="agent-model" placeholder="model id">
+          </div>
+          <div class="agent-row">
+            <label>Attach report / document</label>
+            <input type="file" id="agent-file"
+              accept=".txt,.md,.markdown,.json,.yaml,.yml,.log,.csv,.tsv,.xml,.html,.htm,.ini,.conf,.cfg,.pdf,.pcap,.pcapng,.cap,.yar,.yara,.rules">
+            <div class="agent-file-meta muted" id="agent-file-meta"></div>
+          </div>
+          <textarea id="agent-report" class="agent-report"
+            placeholder="...or paste report text here (optional context sent to the model)"></textarea>
+          <div class="agent-quick">
+            <button class="btn btn-sm" data-q="explain">Explain report</button>
+            <button class="btn btn-sm" data-q="python">Re-implement in Python</button>
+            <button class="btn btn-sm" data-q="detect">Write YARA + Suricata</button>
+          </div>
+          <div class="agent-build">
+            <button class="btn btn-run" id="agent-build">Build scenario from report</button>
+            <p class="muted agent-build-note">Extracts the OT indicators, builds a scenario,
+              registers it in Attacks and runs it with capture on, so you get a pcap to replay.</p>
+          </div>
+        </div>
+        <div class="card agent-review hidden" id="agent-review">
+          <div class="agent-chat-head">
+            <span>Scenario build <span class="agent-rung muted" id="agent-rung"></span></span>
+            <button id="agent-review-close" class="btn btn-ghost btn-sm">&#10005;</button>
+          </div>
+          <div class="agent-steps" id="agent-steps"></div>
+          <div class="agent-plan" id="agent-plan"></div>
+        </div>
+        <div class="card agent-chat">
+          <div class="agent-chat-head">
+            <span>Conversation</span>
+            <button id="agent-clear" class="btn btn-ghost btn-sm">Clear</button>
+          </div>
+          <div class="agent-log" id="agent-log"></div>
+          <div class="agent-input">
+            <textarea id="agent-prompt" rows="3"
+              placeholder="Ask about mrhOTshOT, Caldera, or the attached report...  (Ctrl+Enter to send)"></textarea>
+            <button class="btn btn-run" id="agent-send">Send</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- Log console drawer -->
+<div id="console" class="console hidden">
+  <div class="console-head">
+    <div><span class="lamp" id="console-status"></span> <span id="console-title">Console</span></div>
+    <div class="console-tools">
+      <button id="console-max" class="btn btn-ghost btn-sm" title="Maximize">⤢</button>
+      <button id="console-clear" class="btn btn-ghost btn-sm">clear</button>
+      <button id="console-close" class="btn btn-ghost btn-sm" title="Close">X</button>
+    </div>
+  </div>
+  <pre id="console-body" class="console-body"></pre>
+</div>
+
+<!-- Briefing modal -->
+<div id="modal" class="modal hidden">
+  <div class="modal-card">
+    <div class="modal-head"><h3 id="modal-title">Briefing</h3>
+      <button id="modal-close" class="btn btn-ghost btn-sm" title="Close">X</button></div>
+    <pre id="modal-body" class="modal-body"></pre>
+  </div>
+</div>
+
+<script>
+  window.ATTACKS = {{ attacks_json | safe }};
+  window.PROFILE = {{ profile | tojson }};
+</script>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+<script src="{{ url_for('static', filename='js/agent.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+# Multi-Protocol Water Tank Server - All Dependencies
+# Install with: pip install -r requirements-multiprotocol.txt
+
+# IEC 60870-5-104 Protocol
+# (c104 library - already included in ./c104-2.2.1/)
+
+# Siemens S7 Protocol
+setuptools>=65.0.0
+python-snap7==1.1
+
+# Modbus TCP Protocol
+pymodbus==3.5.4
+
+# OPC-UA Protocol
+asyncua>=1.1.8
+
+# Common dependencies
+psutil==5.9.6  # Required for cleanup_ports.py script

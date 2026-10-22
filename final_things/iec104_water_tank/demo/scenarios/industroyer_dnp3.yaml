@@ -1,0 +1,54 @@
+order: 13
+id: industroyer_dnp3
+name: Industroyer DNP3
+family: Industroyer / CrashOverride (2016)
+year: '2016'
+protocol: DNP3 (TCP/20000)
+target: PLC-8 Water Utility DNP3 ({dnp3}:20000)
+desc: Industroyer's projected North American module. The 2016 malware had IEC-104, IEC 61850, and OPC
+  DA payloads - DNP3 would have been the obvious next target (dominant in US water/power). Integrity poll,
+  output enumeration, then control block disable and valve manipulation.
+color: '#ff6f00'
+briefing:
+- REAL MALWARE FRAMEWORK - Industroyer / CrashOverride (Sandworm/GRU, 2016)
+- Industroyer was a modular framework with swappable protocol payloads.
+- 'Deployed protocols: IEC-104 (Ukraine), IEC 61850 (substations), OPC DA.'
+- DNP3 is the dominant SCADA protocol in North American water utilities and
+- power grids. This represents what a DNP3 module would look like - the TTPs
+- are directly derived from the IEC-104 module's kill chain.
+- ''
+- WHAT WE ARE DOING
+- 1. DNP3 Link Layer connection to outstation (outstation addr 1)
+- 2. Data Link Layer test - confirm outstation responds
+- 3. Integrity Poll (FC 1 / Object 60 Var 1) - enumerate all data objects
+- 4. Read Binary Inputs (Object 1) + Analog Inputs (Object 30) - map I/O
+- '5. Disable controls: CROB write (Object 12) to select-before-operate'
+- '6. Attack: DIRECT_OPERATE on output points to open valves'
+- '7. Persistence: repeat every 5s to prevent recovery'
+- 'VISIBLE IMPACT: Water distribution pumps stop, pressure drops'
+- ''
+- 'IT PHASE: Sandworm VPN→AD→engineering WS kill chain'
+- Shared with Industroyer2 - same Sandworm campaign infrastructure.
+- 108_100.exe drop, ICS_Updater scheduled task, SCADA process .MZ rename.
+- ''
+- ICS MITRE ATT&CK
+- T0855  Unauthorized Command Message (DNP3 CROB direct operate)
+- T0803  Block Command Message (disable outstation controls)
+- T0813  Denial of Control (persistence loop)
+- T0836  Modify Parameter (analog output setpoints)
+cmd:
+- $PY
+- $SIM/industroyer_dnp3/simulation.py
+- --target
+- '{dnp3}'
+- --port
+- '20000'
+- --duration
+- '15'
+watch:
+  plc: dnp3
+  proto: dnp3
+  kind: utility
+  label: DNP3 Water Distribution Utility
+  restore: dnp3
+it_phase: $SCRIPTS/industroyer2_it_phase.py

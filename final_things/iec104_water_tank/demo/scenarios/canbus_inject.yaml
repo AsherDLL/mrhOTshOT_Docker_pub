@@ -1,0 +1,41 @@
+order: 10
+id: canbus_inject
+name: CAN Bus Injection
+family: Automotive CAN
+year: research
+protocol: CANopen (CAN/TCP)
+target: Vehicle CAN node (plc-vehicle:20001)
+desc: 'Automotive CAN injection: override the driver by flooding CANopen SDO writes that pin the throttle
+  object to 100 and brake to 0, so the vehicle accelerates uncontrollably (unintended-acceleration research).
+  Read the speed and accelerometer objects to watch the effect.'
+color: '#8bd450'
+briefing:
+- CAN-BUS INJECTION - automotive / transport bus attack
+- 'CAN has no authentication: any node on the bus can write any message.'
+- This node speaks CANopen (an application layer over CAN); the vehicle
+- exposes throttle / brake / speed / accelerometer as object-dictionary entries.
+- ''
+- WHAT WE ARE DOING
+- 1. NMT start the node (COB-ID 0x000)
+- 2. SDO-write throttle object 0x2000 = 100 (floor it)
+- 3. SDO-write brake object 0x2001 = 0 (release)
+- 4. Loop the override every 1s so the driver cannot regain control
+- 'VISIBLE IMPACT: speed runs away, the accelerometer pins positive'
+- ''
+- MITRE ATT&CK for ICS (adapted)
+- T0855  Unauthorized Command Message (CANopen SDO write)
+- T0831  Manipulation of Control (throttle override)
+- T0836  Modify Parameter (object dictionary)
+cmd:
+- $PY
+- $SIM/canbus_inject/simulation.py
+- --target
+- plc-vehicle
+- --port
+- '20001'
+watch:
+  plc: vehicle
+  proto: canopen
+  kind: vehicle
+  label: Vehicle CAN Bus
+  restore: vehicle

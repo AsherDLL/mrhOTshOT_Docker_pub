@@ -1,0 +1,43 @@
+# mrhOTshOT OT detection sensor (Beta) - a separate, opt-in compose project, the
+# same way docker/console.yml is separate from the lab. A passive Suricata IDS on
+# the lab's docker bridges. Additive: it does NOT touch the core lab
+# (docker/docker-compose.yml) or the ESXi path.
+#
+# Purple-team / bring-your-own-engine: the sensor is just one consumer of the tap.
+# Swap the image + entrypoint below for your own detection engine - it only needs
+# host networking and the bridge interfaces. The ruleset is bind-mounted and
+# hand-editable at docker/suricata/rules/ot.rules.
+#
+#   make lab-up         # start the lab first so the bridges exist
+#   make sensor-up      # build + start the sensor (pins the otlab/ot-net bridges)
+#   make sensor-logs    # live alerts (fast.log)
+#   make sensor-down
+name: mrhotshot-sensor
+
+services:
+  suricata:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.suricata
+    image: mrhotshot/sensor
+    container_name: mrhotshot-sensor
+    restart: unless-stopped
+    # Host networking + NET_RAW is required and intentional: docker bridges are
+    # switched, so only the host network namespace can see all inter-container OT
+    # traffic on the br-* devices. A host-net service cannot also join the named
+    # networks - it does not need to; it is a tap, it only reads packets.
+    network_mode: host
+    cap_add: [NET_ADMIN, NET_RAW]
+    environment:
+      # Space-separated bridge interfaces to sniff. `make sensor-up` fills this with
+      # the otlab + it-net bridge names (it-net = the IT/attacker zone, so attacks are
+      # seen crossing into OT with the real source IP); empty = auto-detect every br-*.
+      SENSOR_IFACES: ${SENSOR_IFACES:-}
+      # Total log-dir budget (MB). Past this, the oldest rotated logs are deleted so
+      # there is always room for new alerts. Per-file rotate size defaults to 100 MB.
+      SENSOR_LOG_MAX_MB: ${SENSOR_LOG_MAX_MB:-500}
+    volumes:
+      # Ruleset: read-only, editable on the host (reload with sensor-down/up).
+      - ./suricata/rules:/rules:ro
+      # Alerts (eve.json / fast.log): shared with the dashboard's Detections tab.
+      - ../final_things/iec104_water_tank/demo/detections:/var/log/suricata

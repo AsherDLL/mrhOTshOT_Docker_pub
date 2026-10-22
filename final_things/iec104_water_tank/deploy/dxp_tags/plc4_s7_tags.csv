@@ -1,0 +1,18 @@
+TagName,Address,DataType,Access,Comment
+WaterLevel,DB1.DBD0,Real,R,Water level 0-100%
+Pressure,DB1.DBD4,Real,R,Tank pressure (bar)
+Temperature,DB1.DBD8,Real,R,Water temperature (C)
+InletValveStatus,DB2.DBX0.0,Bool,R,Inlet valve open/closed
+OutletValveStatus,DB2.DBX0.1,Bool,R,Outlet valve open/closed
+PumpStatus,DB2.DBX0.2,Bool,R,Pump running/stopped
+AutoModeStatus,DB2.DBX0.3,Bool,R,Auto/Manual mode
+AlarmOverflow,DB2.DBX0.4,Bool,R,Overflow alarm
+AlarmLowLevel,DB2.DBX0.5,Bool,R,Low level alarm
+AlarmHighPressure,DB2.DBX0.6,Bool,R,High pressure alarm
+TankExploded,DB2.DBX0.7,Bool,R,Tank rupture
+InletValveCmd,DB3.DBX0.0,Bool,RW,Open/Close inlet valve
+OutletValveCmd,DB3.DBX0.1,Bool,RW,Open/Close outlet valve
+PumpCmd,DB3.DBX0.2,Bool,RW,Start/Stop pump
+AutoModeCmd,DB3.DBX0.3,Bool,RW,Auto/Manual switch
+InletValveSetpoint,DB4.DBD0,Real,RW,Inlet valve position 0-100%
+OutletValveSetpoint,DB4.DBD4,Real,RW,Outlet valve position 0-100%

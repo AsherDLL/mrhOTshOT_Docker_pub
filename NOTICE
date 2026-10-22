@@ -1,0 +1,26 @@
+mrhOTshOT Docker profile
+Copyright 2026 Asher Davila
+
+Licensed under the Apache License, Version 2.0. See LICENSE.
+
+ORIGIN AND ATTRIBUTION
+----------------------
+This repository is the Docker profile of the mrhOTshOT OT/ICS attack-simulation
+lab, created and developed jointly by Asher Davila and Malav Vyas. Both are
+equal authors of the work, which originated at github.com/MalavVyas/mrhOTshOT
+and is published here with permission.
+
+THIRD-PARTY COMPONENTS
+----------------------
+vendor/tricotools/
+    Triconex TriStation honeypot from Nozomi Networks.
+    Source: github.com/NozomiNetworks/tricotools
+    Authors: Alessandro Di Pinto, Andrea Arteaga, Younes Dragoni
+    Licensed under BSD 3-Clause. The original LICENSE and provenance README are
+    retained in that directory unchanged.
+
+The Docker images build on upstream projects that carry their own licenses and
+are pulled at build time rather than vendored here:
+    FUXA (frangoteam/fuxa), MITRE Caldera (ghcr.io/mitre/caldera) and its
+    modbus, dnp3, bacnet and iec61850 plugins, Suricata (jasonish/suricata),
+    and the c104, pymodbus, asyncua, python-snap7 and bacpypes3 Python packages.

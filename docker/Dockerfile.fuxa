@@ -1,0 +1,12 @@
+# mrhOTshOT operator HMI: FUXA with the Modbus/TCP driver dependency baked in.
+#
+# The stock frangoteam/fuxa image ships the Modbus device driver but NOT its npm
+# dependency (modbus-serial), which it expects to be installed on demand as a
+# plugin. The otlab network has no npm access at runtime, so the driver stays
+# unavailable ("plugin is missing") and the HMI cannot poll the PLCs. Install the
+# dependency at build time so the district-heating substation view gets live data.
+FROM frangoteam/fuxa:latest
+
+RUN cd /usr/src/app/FUXA/server \
+    && npm install modbus-serial@8.0.19 --omit=dev \
+    && npm cache clean --force

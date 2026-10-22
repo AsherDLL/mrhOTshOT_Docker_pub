@@ -1,0 +1,14 @@
+TagName,Address,DataType,LocationType,Access,Comment
+SteamPressure,0,UInt16,InputRegister,R,Steam header pressure (bar)
+SteamTemp,1,UInt16,InputRegister,R,Steam temperature (C)
+DrumLevel,2,UInt16,InputRegister,R,Drum water level (%)
+BurnerOn,0,Bool,DiscreteInput,R,Burner running
+FeedwaterPump,1,Bool,DiscreteInput,R,Feedwater pump running
+BlowdownValve,2,Bool,DiscreteInput,R,Blowdown valve open
+SafetyValveOpen,3,Bool,DiscreteInput,R,Safety relief valve open
+FlameFailure,4,Bool,DiscreteInput,R,Flame failure alarm
+HighPressAlarm,5,Bool,DiscreteInput,R,High pressure alarm
+LowWaterAlarm,6,Bool,DiscreteInput,R,Low water alarm
+BurnerCmd,0,Bool,Coil,RW,Start/Stop burner
+FeedwaterCmd,1,Bool,Coil,RW,Start/Stop feedwater pump
+BlowdownCmd,2,Bool,Coil,RW,Open/Close blowdown valve

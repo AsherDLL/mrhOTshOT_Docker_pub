@@ -1,0 +1,10 @@
+# Runtime deps for the OT *target* servers (PLC / SIS / router) container image.
+# Subset of the repo requirements.txt - no offensive tooling, keeps the image lean.
+c104>=1.15.0           # IEC-104 (water/power/boiler PLCs + SIS channel)
+pymodbus>=3.5,<3.7     # Modbus (heating PLC). <3.7: see repo requirements.txt note.
+python-snap7>=1.3      # S7comm (centrifuge PLC)
+asyncua>=1.0.0         # OPC-UA (gas PLC)
+crcmod>=1.7            # TriStation CRC (SIS)
+bacpypes3>=0.0.98      # BACnet/IP (HVAC PLC)
+flask>=3.0.0           # vulnerable router web server
+psutil>=5.9            # port/process helpers

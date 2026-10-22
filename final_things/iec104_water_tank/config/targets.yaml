@@ -1,0 +1,28 @@
+# mrhOTshOT - editable target overrides (consumed by common/targets.py).
+#
+# This file is OPTIONAL and ships EMPTY by default. It is now used to point the
+# docker-profile attacks at the OT zone IPs (192.168.1.x on ot-net) instead of
+# the flat otlab hostnames, so console-launched traffic traverses the emulated
+# router (the inter-zone chokepoint). Blank this file to revert to the flat path.
+#
+# Resolution order (highest priority first):
+#   1. explicit CLI/arg            2. env (MRHOTSHOT_<NAME>_IP / _PORT)
+#   3. this file                   4. profile default (esxi|docker|local)
+#
+# The dashboard's target editor writes to this file.
+
+# OT zone (192.168.1.0/24) - PLCs + SIS reachable from the IT-zone console only
+# via the router (SNAT). Ports keep their protocol defaults.
+targets:
+  water:      {ip: 192.168.1.10}
+  power:      {ip: 192.168.1.11}
+  gas:        {ip: 192.168.1.12}
+  centrifuge: {ip: 192.168.1.13}
+  hvac:       {ip: 192.168.1.14}
+  boiler:     {ip: 192.168.1.15}
+  heating:    {ip: 192.168.1.16}
+  dnp3:       {ip: 192.168.1.17}
+  sensors:    {ip: 192.168.1.18}
+  sis:        {ip: 192.168.1.19}
+  # Edge router web app - IT zone (reached directly by the console, no crossing).
+  router:     {ip: 192.168.0.13}

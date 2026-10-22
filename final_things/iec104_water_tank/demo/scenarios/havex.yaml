@@ -1,0 +1,50 @@
+order: 18
+id: havex
+name: Havex / Dragonfly
+family: Havex / Dragonfly (2013-2014)
+year: '2013'
+esxi_only: true
+protocol: OPC-DA (DCOM :135) + DCE/RPC
+target: ICONICS Historian OPC-DA ({historian}:135)
+desc: Dragonfly/Energetic Bear (2013-2014) silently enumerated OPC-DA servers to map industrial tag databases
+  - PLC addresses, tag names, engineering units, current values. No writes. Pure intelligence gathering
+  exfiltrated to C2. First ICS malware to systematically map OT via legitimate SCADA APIs.
+color: '#78909c'
+briefing:
+- REAL MALWARE - Havex / Dragonfly / Energetic Bear (2013-2014)
+- APT group attributed to Russian FSB (overlap with Turla/Snake).
+- Compromised 1,000+ industrial organizations across US/Europe.
+- ''
+- 'HAVEX OPC MODULE - what it actually did:'
+- '  Used Windows OPC Automation Wrapper (OPCEnum DCOM service)'
+- '  Bound to DCOM endpoint mapper (port 135, DCE/RPC protocol)'
+- '  Enumerated all OPC-DA servers on the network'
+- '  Browsed tag namespace recursively: PLC addresses, tag names,'
+- '  engineering units, data types, current values'
+- '  Serialized full tag map → encrypted exfil to C2'
+- '  No writes. Pure reconnaissance. Stealth was the priority.'
+- ''
+- 'INITIAL ACCESS (watering-hole + trojanized ICS software):'
+- '  Compromised vendor websites (Siemens, ABB, other ICS vendors)'
+- '  Trojanized legitimate software installers with Havex dropper'
+- '  OPC module loaded silently alongside legitimate ICS software'
+- ''
+- WHAT WE ARE DOING
+- 1. DCOM EPM bind to historian (192.168.1.9:135) - DCE/RPC traffic
+- 2. OPC-DA server enumeration via IOPCServerList2
+- 3. Recursive tag namespace browse (OPC Browse)
+- 4. Tag value reads across all discovered points
+- '5. Exfil: write tag map to /tmp/havex_tags.json'
+- '   (simulates C2 upload of industrial intelligence)'
+- ''
+- ICS MITRE ATT&CK
+- T0840  Network Connection Enumeration (OPC-DA discovery)
+- T0852  Screen Capture / Data from Info Repos (tag enumeration)
+- T0882  Theft of Operational Information (tag map exfil)
+cmd:
+- $PY
+- $SIM/havex/simulation.py
+- --target
+- '{historian}'
+watch: none
+it_phase: $SCRIPTS/havex_it_phase.py

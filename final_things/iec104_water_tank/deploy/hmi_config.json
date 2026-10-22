@@ -1,0 +1,46 @@
+{
+  "water_treatment": {
+    "host": "192.168.1.10",
+    "protocols": {"iec104": 2404}
+  },
+  "power_substation": {
+    "host": "192.168.1.11",
+    "protocols": {"iec61850": 8102}
+  },
+  "gas_pipeline": {
+    "host": "192.168.1.12",
+    "protocols": {"opcua": 4840, "fins": 9600, "melsec": 5007}
+  },
+  "centrifuge_cascade": {
+    "host": "192.168.1.13",
+    "protocols": {"s7": 102},
+    "note": "Natanz Fuel Enrichment Plant Cascade A - IR-1 centrifuges (Stuxnet target)"
+  },
+  "building_hvac": {
+    "host": "192.168.1.14",
+    "protocols": {"bacnet": 47808}
+  },
+  "boiler_house": {
+    "host": "192.168.1.15",
+    "protocols": {"abb": 5020}
+  },
+  "heating_district": {
+    "host": "192.168.1.16",
+    "protocols": {"modbus": 502},
+    "slave_id": 11,
+    "enco_scaling": true,
+    "note": "Emulates ENCO ENC-12X district heating controller - slave 11, x10 integer encoding"
+  },
+  "water_utility_dnp3": {
+    "host": "192.168.1.17",
+    "protocols": {"dnp3": 20000}
+  },
+  "sensor_network": {
+    "host": "192.168.1.18",
+    "protocols": {"mbus": 5000}
+  },
+  "safety_system": {
+    "host": "192.168.1.19",
+    "protocols": {"tristation": 1502, "iec104": 2404}
+  }
+}

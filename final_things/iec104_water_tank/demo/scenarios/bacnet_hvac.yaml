@@ -1,0 +1,52 @@
+order: 9
+id: bacnet_hvac
+name: FrostyGoop (BACnet)
+family: FrostyGoop Variant
+year: '2024'
+protocol: BACnet/IP
+target: PLC-5 Building HVAC ({hvac}:47808)
+desc: FrostyGoop methodology adapted for BACnet - the dominant protocol in building automation. WhoIs
+  discovery, property enumeration, then malicious setpoint writes to disable cooling and maximize heating
+  output.
+color: '#00e5ff'
+briefing:
+- REAL MALWARE METHODOLOGY - FrostyGoop adapted for BACnet/IP
+- FrostyGoop targeted Modbus. This demonstrates the same playbook applied
+- to BACnet/IP - the dominant protocol in commercial building automation
+- (HVAC, elevators, fire suppression, access control). An attacker who can
+- reach a BACnet device on the network has full read/write access with no auth.
+- 'Real-world impact: disable cooling in a data center, overheat a hospital.'
+- ''
+- WHAT WE ARE DOING
+- 1. WhoIs broadcast (BVLC 0x0B) - discover all BACnet devices
+- 2. IAm response parsing - enumerate device instances
+- 3. ReadProperty scan - map all Analog/Binary Input/Output objects
+- '4. Disable automation: write AutoModeCmd AO[3] = OFF'
+- '5. Overheat attack: disable chilled water (cooling OFF)'
+- '   write AnalogOutput setpoints to maximum heating values'
+- '6. Persistence loop: re-send every 10s to prevent recovery'
+- 'VISIBLE IMPACT: HVAC enters uncontrolled heating mode'
+- ''
+- 'IT PHASE: FrostyGoop campaign kill chain'
+- Router exploit → Go binary staging → JSON config (slave_id/IP/port)
+- Same threat actor (Sandworm-adjacent) as Modbus FrostyGoop campaign.
+- ''
+- ICS MITRE ATT&CK
+- T0855  Unauthorized Command Message (BACnet WriteProperty)
+- T0836  Modify Parameter (HVAC setpoints)
+- T0813  Denial of Control (persistence prevents recovery)
+- T0830  Adversary-in-the-Middle (BACnet has no auth)
+cmd:
+- $PY
+- $SIM/bacnet_hvac/simulation.py
+- --target
+- '{hvac}'
+- --port
+- '47808'
+watch:
+  plc: hvac
+  proto: bacnet
+  kind: hvac
+  label: Building HVAC (BACnet)
+  restore: hvac
+it_phase: $SCRIPTS/frostygoop_it_phase.py

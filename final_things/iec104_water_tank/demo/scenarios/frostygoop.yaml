@@ -1,0 +1,53 @@
+order: 2
+id: frostygoop
+name: FrostyGoop
+family: FrostyGoop (2024)
+year: '2024'
+protocol: Modbus TCP
+target: PLC-7 Heating District ({heating}:502)
+desc: First ICS malware purpose-built for heating systems. Disables automation, manipulates heat exchanger
+  valve and circulation pump - causing uncontrolled heating loss. Mirroring the 2024 Lviv heating attack.
+color: '#00bcd4'
+briefing:
+- REAL MALWARE - FrostyGoop (Dragos, 2024)
+- First malware purpose-built to abuse Modbus TCP. Used against a Lviv municipal
+- heating utility in January 2024, cutting heat to 600+ apartment buildings for ~48h.
+- Forensics indicate the actor first gained access by sending an RCE exploit to an
+- internet-facing router, then pivoted from that foothold to the OT controller and
+- sent FC05/FC06 writes in a persistence loop so operators could not recover.
+- ''
+- WHAT WE ARE DOING
+- '0. Initial access: RCE against the internet-facing router (command injection)'
+- '   -> root shell, then pivot into the OT network toward the controller'
+- 1. Scan for Modbus TCP devices (port 502) - enumerate slave IDs
+- 2. Read current process state (holding/input registers)
+- '3. Disable automation: FC05 write coil 3 = OFF (manual mode)'
+- '4. Stop the circulation pump: FC05 write coil 1 = OFF (hot water stops flowing)'
+- '5. Force heat-exchanger valve wide open: FC05 write coil 0 = ON (mask the fault)'
+- '6. Persistence loop: re-assert every 5s so operators cannot restart the pump'
+- 'VISIBLE IMPACT: Supply temperature collapses, freeze-protection trips, 600+ buildings lose heat at
+  -30C'
+- ''
+- ICS MITRE ATT&CK
+- T0883  Internet Accessible Device (router RCE - initial access)
+- T0855  Unauthorized Command Message (FC05 coil writes)
+- T0836  Modify Parameter (setpoint manipulation)
+- T0803  Block Command Message (disable auto mode)
+- T0813  Denial of Control (persistence loop prevents recovery)
+initial_access: router
+cmd:
+- $PY
+- $SIM/frostygoop/simulation.py
+- --target
+- '{heating}'
+- --port
+- '502'
+- --duration
+- '90'
+watch:
+  plc: heating
+  proto: modbus
+  unit: 11
+  kind: heating
+  restore: heating
+it_phase: $SCRIPTS/frostygoop_it_phase.py

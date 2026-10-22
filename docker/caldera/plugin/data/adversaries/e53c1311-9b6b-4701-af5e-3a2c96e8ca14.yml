@@ -1,0 +1,12 @@
+id: e53c1311-9b6b-4701-af5e-3a2c96e8ca14
+name: mrhOTshOT - FrostyGoop-style Heating Sabotage
+description: |
+  Recon the heating PLC coils and holding registers, stop the circulation pump
+  (Modbus write coil), then read the coils back to confirm impact. Targets the
+  containerized ENCO ENC-12X (plc-heating, Modbus unit id 11) on the otlab lab.
+  Pair with the "mrhOTshOT Heating (plc-heating, unit 11)" fact source.
+atomic_ordering:
+  - da6481e0-a5e4-4d17-bf09-41131ce931f4
+  - 581f5b39-f787-4ca3-8a9b-f87f8be759c1
+  - a1567b21-1369-40b1-b26b-4bdc2228764b
+  - e6bd50b7-c083-4597-91b6-3ea4575b00f2

@@ -1,0 +1,17 @@
+---
+
+- id: 581f5b39-f787-4ca3-8a9b-f87f8be759c1
+  name: mrhOTshOT - Modbus Read Holding Registers (heating, unit 11)
+  description: |
+    Read holding registers from the lab heating PLC (ENCO ENC-12X emulation on
+    plc-heating, Modbus unit id 11) - setpoints / process values.
+  tactic: collection
+  technique_id: T0861
+  technique_name: Point & Tag Identification
+  executors:
+  - platform: linux
+    name: sh
+    command: >
+      ./modbus_cli #{modbus.server.ip} --port #{modbus.server.port} read_hr #{modbus.read_holding.start} #{modbus.read_holding.count} -d #{modbus.device.id}
+    payloads:
+    - modbus_cli

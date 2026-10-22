@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>mrhOTshOT - sign in</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+</head>
+<body class="login-page">
+  <form class="login-card" method="POST" action="{{ url_for('login') }}">
+    <div class="login-brand"><span class="brand-mark">◢◤</span> mrhOTshOT</div>
+    <p class="login-sub">adversary emulation console</p>
+    {% if error %}<div class="login-error">{{ error }}</div>{% endif %}
+    <label>Username</label>
+    <input type="text" name="username" autofocus autocomplete="username">
+    <label>Password</label>
+    <input type="password" name="password" autocomplete="current-password" placeholder="••••">
+    <button type="submit" class="btn btn-run">Sign in</button>
+  </form>
+</body>
+</html>

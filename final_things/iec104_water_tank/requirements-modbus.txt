@@ -1,0 +1,2 @@
+# Modbus TCP Protocol Dependencies
+pymodbus==3.5.4

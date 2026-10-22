@@ -1,0 +1,21 @@
+# Keep the Docker build context small. The target image only needs the
+# canonical tree's Python code + requirements; everything below is bulk,
+# host-specific, or irrelevant to the OT target servers.
+**/node_modules
+**/.venv
+**/venv
+**/venv_hmi
+**/claude
+**/__pycache__
+**/*.pyc
+.git
+**/*.zip
+final_things/processhacker
+final_things/pipedream_opcua_demo
+**/dist
+**/dist-all
+**/build
+**/*.log
+**/logs
+# Vendored c104 source (we pip-install the c104 wheel instead)
+**/c104-2.2.1

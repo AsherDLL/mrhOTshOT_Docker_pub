@@ -1,0 +1,104 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific
+iec104_water_tank.log
+
+# Attack Logs and Artifacts (NEVER commit real attack data)
+attack_orchestrator_*.log
+attack_log_*.json
+phase_*.log
+
+# Captured Credentials (NEVER commit real credentials)
+captured_credentials.txt
+extracted_creds_*.txt
+*/creds/
+lsass_*.dmp
+SAM
+SECURITY
+SYSTEM
+
+# Payload Files
+payload.zip
+PsExec.exe
+*.exe
+*.dll
+
+# Industroyer2 compiled payloads - intentionally tracked in repo
+!industroyer2_payload/dist/PService_PPD.exe
+!industroyer2_payload/dist/*.exe
+
+# FrostyGoop Go binary - intentionally tracked
+!perform_malware_simulations/frostygoop/frostygoop_linux
+
+# Temporary Attack Files
+/tmp/
+*.tmp
+*.temp
+
+# SSH Keys and Certificates (NEVER commit private keys)
+*.pem
+*.key
+id_rsa
+id_rsa.pub
+*.ppk
+*.crt
+*.csr
+
+# Network Captures (can be large)
+*.pcap
+*.pcapng
+*.cap
+
+# WildFire/XSIAM/XDR Exports
+wildfire_submissions/
+xsiam_exports/
+xdr_logs/
+
+# Custom Lab Exclusions
+machines/hmi/payload/
+machines/attacker/scripts/downloads/
+execution/temp/
+
+# Environment Variables (may contain secrets)
+.env
+.env.local
+.env.*.local

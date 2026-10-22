@@ -1,0 +1,47 @@
+# mrhOTshOT Caldera image: MITRE Caldera 5.x + the caldera-ot protocol plugins
+# (Modbus / DNP3 / BACnet / IEC-61850) so OT abilities can be run against the lab.
+#
+#   docker build -f docker/Dockerfile.caldera -t mrhotshot/caldera .
+#
+FROM ghcr.io/mitre/caldera:5.1.0
+
+# git is needed to pull the plugins (present in the base, installed if not)
+RUN command -v git >/dev/null 2>&1 || ( \
+        apt-get update && apt-get install -y --no-install-recommends git \
+        && rm -rf /var/lib/apt/lists/* )
+
+# Clone the OT plugins into Caldera's plugins/ dir, then drop their .git folders.
+RUN cd plugins \
+    && for p in modbus dnp3 bacnet iec61850; do \
+         git clone --depth 1 "https://github.com/mitre/$p.git" "$p"; \
+       done \
+    && find . -type d -name .git -prune -exec rm -rf {} +
+
+# Install any plugin Python requirements (best-effort; payloads are mostly Go/YAML).
+RUN for p in modbus dnp3 bacnet iec61850; do \
+        if [ -f "plugins/$p/requirements.txt" ]; then \
+            pip install --break-system-packages --no-cache-dir -r "plugins/$p/requirements.txt" || true; \
+        fi; \
+    done
+
+# mrhOTshOT lab OT pack: Modbus abilities tuned to the heating PLC (unit 11), a
+# fact source pre-pointed at plc-heating, and a FrostyGoop-style adversary. Caldera
+# loads these from data/ every boot, so they survive lab recreate. The payloads
+# (modbus_cli) come from the modbus plugin above. Enabled in conf/local.yml.
+COPY docker/caldera/plugin/ plugins/mrhotshot/
+
+# The Magma SPA bakes its API base URL at build time, defaulting to
+# http://localhost:8888 - which from the browser is the mrhOTshOT dashboard, not
+# Caldera, so login fails. Rewrite the compiled bundle to same-origin (relative)
+# so the SPA calls whatever host:port served it (our published :8889).
+RUN find plugins/magma/dist -name '*.js' -exec sed -i 's#http://localhost:8888##g' {} +
+
+# Cache-bust: rename the patched entry chunk so browsers that cached the old
+# (localhost:8888) bundle are forced to fetch the fixed one. The base-URL string
+# lives only in the entry chunk, so renaming just it is sufficient and safe.
+RUN cd plugins/magma/dist \
+    && ref="$(grep -oE '/assets/index\.[a-z0-9]+\.js' index.html | head -1)" \
+    && new="${ref%.js}-ot.js" \
+    && cp ".$ref" ".$new" \
+    && sed -i "s#$ref#$new#g" index.html \
+    && echo "cache-busted entry: $ref -> $new"

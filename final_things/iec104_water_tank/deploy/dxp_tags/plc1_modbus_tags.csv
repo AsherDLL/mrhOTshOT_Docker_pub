@@ -1,0 +1,19 @@
+TagName,Address,DataType,LocationType,Access,Comment
+WaterLevel,0,UInt16,InputRegister,R,Water level 0-100%
+Pressure,1,UInt16,InputRegister,R,Tank pressure (bar)
+Temperature,2,UInt16,InputRegister,R,Water temperature (C)
+InletValve,0,Bool,DiscreteInput,R,Inlet valve open/closed
+OutletValve,1,Bool,DiscreteInput,R,Outlet valve open/closed
+PumpRunning,2,Bool,DiscreteInput,R,Pump running/stopped
+AutoMode,3,Bool,DiscreteInput,R,Auto/Manual mode
+AlarmOverflow,4,Bool,DiscreteInput,R,Overflow alarm
+AlarmLowLevel,5,Bool,DiscreteInput,R,Low level alarm
+AlarmHighPressure,6,Bool,DiscreteInput,R,High pressure alarm
+TankExploded,7,Bool,DiscreteInput,R,Tank rupture
+SISTripped,8,Bool,DiscreteInput,R,Safety system trip
+InletValveCmd,0,Bool,Coil,RW,Open/Close inlet valve
+OutletValveCmd,1,Bool,Coil,RW,Open/Close outlet valve
+PumpCmd,2,Bool,Coil,RW,Start/Stop pump
+AutoModeCmd,3,Bool,Coil,RW,Auto/Manual switch
+InletValveSetpoint,0,UInt16,HoldingRegister,RW,Inlet valve position 0-100%
+OutletValveSetpoint,1,UInt16,HoldingRegister,RW,Outlet valve position 0-100%

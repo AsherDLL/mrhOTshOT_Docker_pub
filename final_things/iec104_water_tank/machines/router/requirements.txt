@@ -1,0 +1,12 @@
+# Router Machine - Python Requirements
+# Install with: pip3 install -r requirements.txt
+
+# Web Server Framework
+flask>=3.0.0
+werkzeug>=3.0.0
+
+# HTTP Request Handling
+requests>=2.31.0
+
+# Note: This machine runs a vulnerable web server for demonstration purposes
+# The vulnerability is intentional for the lab environment

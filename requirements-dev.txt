@@ -1,0 +1,5 @@
+# Dev/test tooling for mrhOTshOT. Install: ./.venv/bin/pip install -r requirements-dev.txt
+# (setup_all.sh installs this automatically.)
+pytest>=8.0
+ruff>=0.5
+black>=24.0

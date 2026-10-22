@@ -1,0 +1,31 @@
+# mrhOTshOT - Main Python Requirements
+# Core dependencies for the Industroyer2 attack simulation lab
+
+# Common Dependencies
+requests>=2.31.0
+flask>=3.0.0
+
+# IEC-104 Protocol Library (for PLC and HMI)
+c104>=1.15.0
+
+# Modbus TCP (FrostyGoop simulation)
+pymodbus>=3.0.0
+
+# Siemens S7 (Stuxnet simulation)
+python-snap7>=1.3
+setuptools
+
+# OPC-UA (PIPEDREAM simulation)
+asyncua>=1.0.0
+
+# BACnet/IP (HVAC simulation + custom-target BACnet console)
+bacpypes3>=0.0.98
+
+# CRC for TriStation protocol (SIS/Triton simulation)
+crcmod>=1.7
+
+# For detailed machine-specific requirements, see:
+# - machines/attacker/requirements.txt - Attack tools and libraries
+# - machines/router/requirements.txt - Vulnerable web server
+# - machines/hmi/requirements.txt - HMI client and malware simulation
+# - machines/plc/requirements.txt - PLC/RTU server components

@@ -1,0 +1,90 @@
+# OT detection ruleset (Suricata) - zone / policy based
+# =============================================================================
+# In a segmented (Purdue-style) OT network, control and write operations to field
+# devices are only legitimate from the authorized OT zone ($OT_ZONE, set by the
+# sensor to the OT control subnet). These rules detect the OPERATION (a write or a
+# control command per protocol) and flag it when the source is OUTSIDE that zone -
+# e.g. an operator workstation in the IT/enterprise zone, a C2 pivot, or an external
+# host reaching in. This catches the whole class of unauthorized control, rather than
+# one specific malware's byte pattern, and reads naturally: "control command from an
+# unauthorized zone". Benign monitoring (the HMI polling registers from inside the OT
+# zone) never matches - it is neither a write nor from an unauthorized source.
+#
+# $OT_ZONE is defined in docker/suricata/entrypoint.sh (SENSOR_OT_ZONE to override).
+# SID block 9100000-9199999. Bind-mounted read-only; edit and reload with
+# `make sensor-down && make sensor-up`.
+
+# --- Modbus/TCP (port 502) ------------------------------------------------------
+# Any Modbus write (coil/register) to a field device, from outside the OT zone.
+# Matched per transaction by the app-layer parser (read vs write), so the HMI's
+# benign polling from inside the zone never fires.
+alert tcp !$OT_ZONE any -> any 502 (msg:"OT Modbus write to field device from unauthorized zone"; flow:established,to_server; modbus:access write; classtype:policy-violation; metadata:protocol modbus, policy zone; sid:9100101; rev:4;)
+
+# --- IEC 60870-5-104 (port 2404) ------------------------------------------------
+# Any control command (C_SC / C_DC / C_SE ...) with cause ACTIVATION, from outside
+# the OT zone. VSQ=01, COT=06 sit 7-8 bytes into the APCI regardless of command type.
+alert tcp !$OT_ZONE any -> any 2404 (msg:"OT IEC-104 control command from unauthorized zone"; flow:established,to_server; content:"|68|"; content:"|01 06|"; distance:6; within:2; classtype:policy-violation; metadata:protocol iec104, policy zone; sid:9100201; rev:3;)
+
+# --- S7comm (port 102) ----------------------------------------------------------
+# An S7 job (0x32 0x01) with function 0x05 (Write Var) - a write to a data block -
+# from outside the OT zone.
+alert tcp !$OT_ZONE any -> any 102 (msg:"OT S7comm write to data block from unauthorized zone"; flow:established,to_server; content:"|32 01|"; content:"|05|"; distance:8; within:1; classtype:policy-violation; metadata:protocol s7comm, policy zone; sid:9100301; rev:3;)
+
+# --- TriStation (UDP port 1502) -------------------------------------------------
+# Any TriStation command datagram (05 .. | 00 00 <func>) to the safety controller,
+# from outside the OT zone. Only an engineering station should ever speak this.
+alert udp !$OT_ZONE any -> any 1502 (msg:"OT TriStation command to SIS from unauthorized zone"; content:"|05|"; depth:1; content:"|00 00|"; offset:4; depth:2; classtype:policy-violation; metadata:protocol tristation, policy zone; sid:9100401; rev:3;)
+
+# --- M-Bus (port 5000) ----------------------------------------------------------
+# A user-data write (SND_UD, C-field 0x53) or a broadcast reset (SND_NKE to 0xFF) to
+# the sensor gateway, from outside the OT zone.
+alert tcp !$OT_ZONE any -> any 5000 (msg:"OT M-Bus write to gateway from unauthorized zone"; flow:established,to_server; content:"|68|"; content:"|53|"; distance:3; within:1; classtype:policy-violation; metadata:protocol mbus, policy zone; sid:9100501; rev:3;)
+alert tcp !$OT_ZONE any -> any 5000 (msg:"OT M-Bus broadcast reset from unauthorized zone"; flow:established,to_server; content:"|10 40 ff|"; classtype:policy-violation; metadata:protocol mbus, policy zone; sid:9100502; rev:3;)
+
+# --- OPC-UA (port 4840) ---------------------------------------------------------
+# An OPC-UA WriteRequest (service NodeId i=673 -> "01 00 a1 02"), from outside the OT
+# zone. Legitimate monitoring uses Read (i=631).
+alert tcp !$OT_ZONE any -> any 4840 (msg:"OT OPC-UA write from unauthorized zone"; flow:established,to_server; content:"|01 00 a1 02|"; classtype:policy-violation; metadata:protocol opcua, policy zone; sid:9100601; rev:3;)
+
+# --- DNP3 (port 20000) ----------------------------------------------------------
+# A DNP3 control output - a Control Relay Output Block (object group 12 var 1,
+# "0c 01") after the 05 64 link header - from outside the OT zone.
+alert tcp !$OT_ZONE any -> any 20000 (msg:"OT DNP3 control output from unauthorized zone"; flow:established,to_server; content:"|05 64|"; content:"|0c 01|"; distance:0; within:64; classtype:policy-violation; metadata:protocol dnp3, policy zone; sid:9100701; rev:3;)
+
+# --- CANopen over TCP (port 20001) ----------------------------------------------
+# An SDO expedited download (write) to node 1 (cob-id 0x0601, dlc 8, cs 0x2F), from
+# outside the OT zone.
+alert tcp !$OT_ZONE any -> any 20001 (msg:"OT CANopen SDO write from unauthorized zone"; flow:established,to_server; content:"|06 01 08 2f|"; classtype:policy-violation; metadata:protocol canopen, policy zone; sid:9100801; rev:3;)
+
+# --- BACnet/IP (UDP port 47808) -------------------------------------------------
+# A BACnet WriteProperty (confirmed-request, service choice 0x0F) to a field device,
+# from outside the OT zone. The service choice sits 3 bytes past the NPDU header;
+# benign monitoring uses ReadProperty (0x0C).
+alert udp !$OT_ZONE any -> any 47808 (msg:"OT BACnet WriteProperty to field device from unauthorized zone"; content:"|81|"; depth:1; content:"|01 04|"; content:"|0f|"; distance:3; within:1; classtype:policy-violation; metadata:protocol bacnet, policy zone; sid:9101001; rev:1;)
+
+# --- IEC 61850 (port 8102) ------------------------------------------------------
+# A control operate to a switch controller (a write to a CSWI ...Oper.ctlVal object -
+# the breaker-open command), from outside the OT zone. Reads never carry ctlVal.
+alert tcp !$OT_ZONE any -> any 8102 (msg:"OT IEC-61850 control operate to breaker from unauthorized zone"; flow:established,to_server; content:"|22|write|22|"; content:"Oper.ctlVal"; classtype:policy-violation; metadata:protocol iec61850, policy zone; sid:9101101; rev:1;)
+
+# --- SNMP / NTCIP (UDP port 161) ------------------------------------------------
+# An SNMP SET-request (PDU tag 0xA3, followed by the request-id INTEGER) - a write to
+# a device object - from outside the OT zone. Polling uses GET / GET-NEXT (0xA0/0xA1).
+alert udp !$OT_ZONE any -> any 161 (msg:"OT SNMP SET to field device from unauthorized zone"; content:"|30|"; depth:1; content:"|a3|"; content:"|02 01|"; distance:1; within:2; classtype:policy-violation; metadata:protocol snmp, policy zone; sid:9101201; rev:1;)
+
+# --- OMRON FINS (port 9600) -----------------------------------------------------
+# A FINS Memory Area Write (command code 01 02) to a controller, from outside the OT
+# zone. The command code sits 7 bytes past the FINS header start (ICF 0x80, GCT 0x02).
+alert tcp !$OT_ZONE any -> any 9600 (msg:"OT OMRON FINS memory write to controller from unauthorized zone"; flow:established,to_server; content:"|80 00 02|"; content:"|01 02|"; distance:7; within:2; classtype:policy-violation; metadata:protocol fins, policy zone; sid:9101301; rev:1;)
+
+# --- OPC-DA / DCOM (port 135) ---------------------------------------------------
+# A DCE/RPC BIND (05 00 0b) to the DCOM endpoint mapper - the first step of OPC-DA
+# server discovery - from outside the OT zone. No enterprise host maps OPC over DCOM.
+alert tcp !$OT_ZONE any -> any 135 (msg:"OT OPC-DA/DCOM endpoint-mapper enumeration from unauthorized zone"; flow:established,to_server; content:"|05 00 0b|"; depth:3; classtype:policy-violation; metadata:protocol opcda, policy zone; sid:9101401; rev:1;)
+
+# =============================================================================
+# Reconnaissance - device fingerprinting the HMI never performs (it only polls
+# holding/input registers), so it is anomalous from ANY source.
+# =============================================================================
+alert tcp any any -> any 502 (msg:"OT Modbus device enumeration - Read Device ID"; flow:established,to_server; content:"|00 00 00 05|"; offset:2; depth:4; content:"|2b 0e|"; distance:1; within:2; classtype:attempted-recon; metadata:protocol modbus; sid:9100901; rev:4;)
+alert tcp any any -> any 502 (msg:"OT Modbus device enumeration - Report Server ID"; flow:established,to_server; modbus:function 17; classtype:attempted-recon; metadata:protocol modbus; sid:9100902; rev:2;)

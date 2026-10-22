@@ -1,0 +1,30 @@
+# HMI Machine (Windows) - Python Requirements
+# Install with: pip install -r requirements.txt
+
+# IEC-104 Protocol Client
+c104>=1.15.0
+
+# Web Server (for receiving payloads)
+flask>=3.0.0
+
+# HTTP Requests
+requests>=2.31.0
+
+# Industrial Protocols
+pymodbus>=3.5.0
+
+# Credential Extraction (for Phase 3)
+pypykatz>=0.6.8
+
+# Remote Execution Support
+impacket>=0.11.0
+
+# Windows-Specific Utilities
+pywin32>=306
+wmi>=1.5.1
+
+# Note: This machine should have:
+# - Python 3.11+ installed with "Add to PATH" enabled
+# - PowerShell execution policy set appropriately
+# - RDP, SMB, and WinRM enabled (configured by setup.ps1)
+# - User account: operator / labpass123

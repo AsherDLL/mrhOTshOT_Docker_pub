@@ -1,0 +1,62 @@
+order: 5
+id: triton
+name: TRITON / TRISIS
+family: TRITON (2017)
+year: '2017'
+protocol: TriStation (UDP/1502) + IEC-104
+target: SIS-1 ({sis}:1502) → Process ({sis}:2404)
+desc: The only malware ever designed to attack Safety Instrumented Systems. Phase 1 disables the safety
+  system via authentic TriStation UDP protocol (CRC-verified frames). Phase 2 launches the IEC-104 process
+  attack - without SIS intervention, tank overflow causes unmitigated rupture.
+color: '#f44336'
+briefing:
+- REAL MALWARE - TRITON / TRISIS (2017, attributed to TEMP.Veles / Russia)
+- The most dangerous ICS malware ever deployed. Targeted a Saudi petrochemical
+- 'plant''s Triconex Safety Instrumented System (SIS). Goal: disable safety so a'
+- separate attack could cause catastrophic physical damage without the SIS
+- intervening. Discovered only because a bug caused the SIS to fail-safe.
+- First malware to target safety systems - unprecedented red line crossed.
+- ''
+- 'WHAT WE ARE DOING (2-phase attack):'
+- 'Phase 1 - TriStation SIS Compromise:'
+- '  1. Send TCM CONNECT REQUEST via TriStation UDP (port 1502)'
+- '  2. Attach to TRICON safety controller (func 0x0D)'
+- '  3. Query CP status and chassis status'
+- '  4. Deploy TRITON payload: HALT safety program, write malicious logic'
+- '  5. SIS is now neutralized - no safety intervention possible'
+- 'Phase 2 - IEC-104 Process Attack (without safety net):'
+- '  1. Connect to process PLC via IEC-104'
+- '  2. Open inlet, close outlet - tank fills uncontrollably'
+- '  3. SIS would normally trip - but it has been disabled'
+- 'VISIBLE IMPACT: Tank overflow proceeds to rupture unchecked'
+- ''
+- ICS MITRE ATT&CK
+- T0838  Modify Safety System Logic (TriStation payload)
+- T0881  Service Stop (halt SIS program)
+- T0855  Unauthorized Command Message (IEC-104 process attack)
+- T0879  Damage to Property (rupture without safety)
+cmd:
+- $PY
+- $SIM/triton/simulation.py
+- --sis-ip
+- '{sis}'
+- --plc-ip
+- '{sis}'
+cmd_lab:
+- $PY
+- $SIM/triton/simulation.py
+- --sis-ip
+- '{sis}'
+- --plc-ip
+- '{water}'
+- --plc-port
+- '2404'
+- --duration
+- '90'
+watch:
+  plc: water
+  proto: iec104
+  kind: safety
+  label: Safety-Instrumented Water Tank
+  restore: safety
+it_phase: $SCRIPTS/triton_it_phase.py

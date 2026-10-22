@@ -1,0 +1,55 @@
+# mrhOTshOT operator console (separate compose project from the lab so it never
+# manages itself). Runs the dashboard + sims in a container on the otlab network,
+# and manages the lab (docker-compose.yml) through the mounted Docker socket.
+#
+#   docker network create otlab 2>/dev/null || true   # (make console-up does this)
+#   docker compose -f docker/console.yml up -d --build
+#
+# Dashboard: http://127.0.0.1:8888  (host loopback only)
+name: mrhotshot-console
+
+services:
+  console:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.console
+    image: mrhotshot/console
+    container_name: mrhotshot-console
+    restart: unless-stopped
+    # NET_ADMIN + a route-init so the console (IT-zone attacker workstation) reaches
+    # OT/Mgmt zone IPs via the emulated router. Keeps otlab for management + DNS.
+    cap_add: [NET_ADMIN]
+    entrypoint: ["sh", "/opt/mrhOTshOT/docker/console-init.sh"]
+    command: ["python", "attack_demo_ui.py"]
+    networks:
+      otlab: {}
+      it-net: {ipv4_address: 192.168.0.11}
+    # bind on the host loopback only; the app listens on 0.0.0.0 inside the container
+    ports: ["127.0.0.1:8888:8888"]
+    environment:
+      MRHOTSHOT_PROFILE: docker
+      MRHOTSHOT_UI_HOST: "0.0.0.0"
+      MRHOTSHOT_PYTHON: /usr/local/bin/python
+      MRHOTSHOT_CALDERA_URL: http://caldera:8888    # reached on the otlab network
+      MRHOTSHOT_CALDERA_KEY: mrhotshot-red          # matches docker/caldera/local.yml
+      MRHOTSHOT_CALDERA_UI_PORT: "8889"             # host port for the "Open Caldera" link
+      # Agent (Beta) LLM keys - default empty (feature off) so bring-up never needs them.
+      # Supply real values via docker/agent.env: `docker compose --env-file docker/agent.env ...`
+      MRHOTSHOT_OPENAI_KEY: ${MRHOTSHOT_OPENAI_KEY:-}
+      MRHOTSHOT_MOONSHOT_KEY: ${MRHOTSHOT_MOONSHOT_KEY:-}
+      MRHOTSHOT_QWEN_KEY: ${MRHOTSHOT_QWEN_KEY:-}
+      MRHOTSHOT_OPENROUTER_KEY: ${MRHOTSHOT_OPENROUTER_KEY:-}
+      MRHOTSHOT_AGENT_BASE_URL: ${MRHOTSHOT_AGENT_BASE_URL:-}
+      MRHOTSHOT_AGENT_MODEL: ${MRHOTSHOT_AGENT_MODEL:-}
+      MRHOTSHOT_AGENT_KEY: ${MRHOTSHOT_AGENT_KEY:-}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock   # manage the lab via the host daemon
+      - ..:/opt/mrhOTshOT                            # live code + config/targets.yaml + logs
+
+networks:
+  otlab:
+    external: true
+    name: otlab
+  it-net:
+    external: true
+    name: it-net

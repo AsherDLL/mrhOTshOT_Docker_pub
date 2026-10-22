@@ -1,0 +1,24 @@
+# PLC/RTU Machine - Python Requirements
+# Install with: pip3 install -r requirements.txt
+
+# IEC-104 Protocol Server
+c104>=1.15.0
+
+# HTTP Server (for status monitoring)
+flask>=3.0.0
+
+# Industrial Protocols
+pymodbus>=3.5.0
+
+# Utilities
+requests>=2.31.0
+
+# Note: The c104 library requires compilation
+# Ensure these are installed first:
+#   sudo apt-get install -y build-essential cmake python3-dev
+# 
+# Installation from local libs:
+#   pip3 install ~/mrhOTshOT/libs/c104-2.2.1
+#
+# The water tank simulation runs as a systemd service
+# See machines/plc/setup.sh for service configuration

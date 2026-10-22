@@ -1,0 +1,61 @@
+# --- mrhOTshOT: keep the checkout clean and trivially removable ---
+# Everything here is rebuilt by ./scripts/install.sh or produced at runtime.
+
+# Python virtualenvs
+.venv/
+venv
+venv/
+*/venv
+*/venv/
+**/venv
+**/venv/
+
+final_things/iec104_water_tank/venv_hmi/
+
+# Python caches / build artifacts
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+dist-all/
+
+# Node. Nothing in the Docker profile uses npm at runtime.
+node_modules/
+
+# Vendored c104 source. The Docker images pip-install the c104 wheel instead.
+c104-2.2.1/
+
+# Runtime output written by the simulators/servers
+logs/
+reports/
+*.log
+
+# Packet captures written by the dashboard's capture feature
+captures/
+*.pcap
+*.pcapng
+
+# OT detection sensor output (Suricata eve.json / fast.log), runtime-only
+detections/
+
+# Credential-dump / capture artifacts written by attack scripts
+captured_credentials.txt
+phishing_log.txt
+router_access.log
+
+# OS cruft
+.DS_Store
+
+# Copilot-authored payload scripts. Generated *manifests* under demo/scenarios/
+# stay tracked - they are the deliverable and should show up in git diff - but
+# LLM-written Python is a runtime artifact and does not belong in history by
+# default. Promote one by force-adding it after you have read it.
+final_things/iec104_water_tank/perform_malware_simulations/generated/
+# Copilot tool-call audit log
+final_things/iec104_water_tank/demo/logs/copilot_audit.log
+
+# Agent (Beta) API keys - never commit real keys (use docker/agent.env.example as a template)
+docker/agent.env
+docker/.env

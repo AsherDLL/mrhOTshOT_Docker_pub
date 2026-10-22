@@ -1,0 +1,49 @@
+order: 15
+id: pipedream
+name: PIPEDREAM - MOUSEHOLE + EVILSCHOLAR OPC-UA
+family: PIPEDREAM / INCONTROLLER (2022)
+year: '2022'
+protocol: OPC-UA (TCP/4840)
+target: PLC-3 Gas Pipeline ({gas}:4840)
+desc: 'MOUSEHOLE fingerprints OPC-UA servers, then EVILSCHOLAR exploits them. IT phase delivers full PIPEDREAM
+  toolkit to HMI via ZIP: LAZYCARGO kernel rootkit + DUSTTUNNEL C2 + EVILSCHOLAR/BADOMEN/MOUSEHOLE run
+  from engineering WS.'
+color: '#8bc34a'
+briefing:
+- REAL MALWARE - PIPEDREAM / INCONTROLLER (2022, attributed to Chernovite)
+- Discovered April 2022 before deployment. 5-module framework - most capable
+- ICS attack framework ever found. IT phase delivers full toolkit to HMI.
+- ''
+- 'IT PHASE (ZIP delivery to HMI, executed from 192.168.1.55):'
+- '  LAZYCARGO  : AsrDrv103.sys BYOVD kernel rootkit -> Event 7045 CRITICAL'
+- '  DUSTTUNNEL : persistent TCP :8443 C2 tunnel -> Event 5156'
+- '  MOUSEHOLE  : OPC-UA fingerprint from HMI -> PLC-3 :4840'
+- '  EVILSCHOLAR: UDP 27127 multicast + Modbus FC03/FC06 from HMI -> PLC-7'
+- '  BADOMEN    : OMRON FINS TCP from HMI -> PLC-3 :9600'
+- ''
+- 'OT PHASE (Kali -> PLC-3 :4840):'
+- '  MOUSEHOLE: GetEndpoints + browse address space + enumerate nodes'
+- '  EVILSCHOLAR: write compressor + valve setpoints (gas pipeline overpressure)'
+- ''
+- ICS MITRE ATT&CK
+- T0855  Unauthorized Command Message (OPC-UA Write)
+- T0836  Modify Parameter (compressor/valve setpoints)
+- T0879  Damage to Property (overpressure rupture risk)
+cmd:
+- $PY
+- $REPO/final_things/pipedream_opcua_demo/pipedream_simulation/pipedream_simulation.py
+- --target
+- '{gas}'
+- --port
+- '4840'
+- --fingerprint
+- --attack
+- gas_pipeline
+- --duration
+- '15'
+watch:
+  plc: gas
+  proto: opcua
+  kind: gas
+  restore: gas
+it_phase: $SCRIPTS/pipedream_it_phase.py

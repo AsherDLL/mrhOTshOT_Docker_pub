@@ -1,0 +1,18 @@
+Tag Name,Description,Data Type,Register Type,Address,Function Code,Scaling Low,Scaling High,Units,Access,Scan Rate
+WaterLevel,Tank water level percentage,Analog,Input Register,30001,04,0,100,%,Read,1000
+Pressure,Tank pressure,Analog,Input Register,30002,04,0,10,bar,Read,1000
+Temperature,Water temperature,Analog,Input Register,30003,04,0,100,°C,Read,1000
+InletValveStatus,Inlet valve open/closed status,Digital,Discrete Input,10001,02,0,1,,Read,1000
+OutletValveStatus,Outlet valve open/closed status,Digital,Discrete Input,10002,02,0,1,,Read,1000
+PumpStatus,Pump running status,Digital,Discrete Input,10003,02,0,1,,Read,1000
+AutoModeStatus,Automatic mode active,Digital,Discrete Input,10004,02,0,1,,Read,1000
+OverflowAlarm,Tank overflow alarm (>98%),Digital,Discrete Input,10009,02,0,1,,Read,500
+LowLevelAlarm,Low water level alarm (<10%),Digital,Discrete Input,10010,02,0,1,,Read,500
+HighPressureAlarm,High pressure alarm (>8 bar),Digital,Discrete Input,10011,02,0,1,,Read,500
+TankExplodedAlarm,Tank rupture/explosion (>10 bar),Digital,Discrete Input,10012,02,0,1,,Read,500
+InletValveCommand,Open/close inlet valve (manual mode),Digital,Coil,00001,05,0,1,,Read/Write,OnDemand
+OutletValveCommand,Open/close outlet valve (manual mode),Digital,Coil,00002,05,0,1,,Read/Write,OnDemand
+PumpCommand,Start/stop pump (manual mode),Digital,Coil,00003,05,0,1,,Read/Write,OnDemand
+AutoModeCommand,Enable/disable auto mode,Digital,Coil,00004,05,0,1,,Read/Write,OnDemand
+InletValveSetpoint,Inlet valve position setpoint (manual mode),Analog,Holding Register,40001,06,0,100,%,Read/Write,OnDemand
+OutletValveSetpoint,Outlet valve position setpoint (manual mode),Analog,Holding Register,40002,06,0,100,%,Read/Write,OnDemand

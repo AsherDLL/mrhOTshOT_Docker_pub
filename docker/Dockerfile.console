@@ -1,0 +1,35 @@
+# mrhOTshOT operator console: runs the dashboard + all attack sims INSIDE a
+# container, so nothing is installed on the host. It joins the otlab network
+# (reaches PLCs directly) and manages the lab via the mounted Docker socket.
+#
+#   docker build -f docker/Dockerfile.console -t mrhotshot/console .
+#
+FROM python:3.12-slim
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    MRHOTSHOT_PYTHON=/usr/local/bin/python \
+    MRHOTSHOT_PROFILE=docker
+
+# Docker CLI + compose plugin (talk to the host daemon via the mounted socket)
+# and tshark for the per-attack packet capture. Everything else is pip.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        ca-certificates curl gnupg tshark iproute2 \
+    && install -m 0755 -d /etc/apt/keyrings \
+    && curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc \
+    && chmod a+r /etc/apt/keyrings/docker.asc \
+    && echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable" \
+        > /etc/apt/sources.list.d/docker.list \
+    && apt-get update && apt-get install -y --no-install-recommends \
+        docker-ce-cli docker-compose-plugin \
+    && rm -rf /var/lib/apt/lists/*
+
+# All attack + protocol + dashboard deps live in the image (not on the host).
+COPY requirements.txt /tmp/requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
+
+# The repo is bind-mounted at /opt/mrhOTshOT (same path as the host) so the
+# dashboard's compose/build paths match the host daemon's view.
+WORKDIR /opt/mrhOTshOT/final_things/iec104_water_tank/demo
+EXPOSE 8888
+CMD ["python", "attack_demo_ui.py"]

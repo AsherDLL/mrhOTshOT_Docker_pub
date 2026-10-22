@@ -1,0 +1,41 @@
+order: 11
+id: canbus_brake
+name: CAN Brake Override
+family: Automotive CAN
+year: research
+protocol: CANopen (CAN/TCP)
+target: Vehicle CAN node (plc-vehicle:20001)
+desc: 'Automotive CAN injection (brake variant): flood CANopen SDO writes that pin the brake object to
+  100 and throttle to 0, forcing a hard emergency stop the driver cannot accelerate out of. The speedometer
+  drops and the accelerometer swings hard to the brake side.'
+color: '#4ea1d3'
+briefing:
+- CAN BRAKE OVERRIDE - automotive / transport bus attack
+- 'CAN has no authentication: any node on the bus can write any message.'
+- Same access as the acceleration injection, opposite actuator - the
+- attacker forces the brake object instead of the throttle.
+- ''
+- WHAT WE ARE DOING
+- 1. NMT start the node (COB-ID 0x000)
+- 2. SDO-write brake object 0x2001 = 100 (slam the brakes)
+- 3. SDO-write throttle object 0x2000 = 0 (cut power)
+- 4. Loop the override every 1s so the driver cannot regain control
+- 'VISIBLE IMPACT: speed collapses, the accelerometer pins negative (braking)'
+- ''
+- MITRE ATT&CK for ICS (adapted)
+- T0855  Unauthorized Command Message (CANopen SDO write)
+- T0831  Manipulation of Control (brake override)
+- T0836  Modify Parameter (object dictionary)
+cmd:
+- $PY
+- $SIM/canbus_brake/simulation.py
+- --target
+- plc-vehicle
+- --port
+- '20001'
+watch:
+  plc: vehicle
+  proto: canopen
+  kind: vehicle
+  label: Vehicle CAN Bus
+  restore: vehicle

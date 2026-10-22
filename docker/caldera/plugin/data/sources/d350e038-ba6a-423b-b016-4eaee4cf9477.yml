@@ -1,0 +1,23 @@
+---
+
+id: d350e038-ba6a-423b-b016-4eaee4cf9477
+name: mrhOTshOT Heating (plc-heating, unit 11)
+facts:
+- trait: modbus.server.ip
+  value: plc-heating
+- trait: modbus.server.port
+  value: 502
+- trait: modbus.device.id
+  value: 11
+- trait: modbus.read_coil.start
+  value: 0
+- trait: modbus.read_coil.count
+  value: 4
+- trait: modbus.read_holding.start
+  value: 0
+- trait: modbus.read_holding.count
+  value: 8
+- trait: modbus.write_coil.start
+  value: 0
+- trait: modbus.write_coil.value
+  value: "OFF"   # quoted: unquoted OFF is a YAML boolean (False)

@@ -1,0 +1,64 @@
+order: 4
+id: blackenergy3
+name: BlackEnergy3
+family: BlackEnergy (2015)
+year: '2015'
+protocol: IEC-104 + KillDisk
+target: PLC-2 Power Substation ({power}:2404) + HMI ({hmi})
+desc: Dual-threaded attack used against Ukraine's power grid in 2015. Thread 1 sends IEC-104 commands
+  to the power substation RTU to trip breakers. Thread 2 simultaneously destroys the HMI display - operators
+  go blind during the attack.
+color: '#9c27b0'
+briefing:
+- REAL MALWARE - BlackEnergy3 / Sandworm (GRU, December 2015)
+- First confirmed cyberattack to cause a power outage. Hit 3 Ukrainian utilities,
+- left 230,000 people without power for 1-6 hours. Deployed KillDisk wiper on
+- SCADA workstations simultaneously with substation IEC-104 attacks - operators
+- could not see what was happening while breakers were being tripped.
+- ''
+- 'WHAT WE ARE DOING (2 threads simultaneously):'
+- 'Thread 1 - IEC-104 Substation Attack:'
+- '  1. Connect to the substation IEC-104 RTU (port 2404)'
+- '  2. Disable the protection relay (manual mode)'
+- '  3. Open all breakers (incoming, bus-tie, outgoing) -> blackout'
+- '  4. Re-send every 2s so operators cannot re-close them'
+- 'Thread 2 - KillDisk Wiper (operator workstation):'
+- '  1. Reach the operator''s SCADA workstation'
+- '  2. Overwrite the MBR + delete SCADA files + kill processes'
+- '  3. Operators go blind exactly as the breakers trip'
+- '  (docker: no live HMI, so the wiper runs as a safe local simulation)'
+- 'VISIBLE IMPACT: substation blackout + operators blinded (KillDisk)'
+- ''
+- ICS MITRE ATT&CK
+- T0809  Data Destruction (KillDisk wiper on HMI)
+- T0855  Unauthorized Command Message (IEC-104 to PLC)
+- T0826  Loss of Availability (dual simultaneous attack)
+- T0817  Drive-by Compromise (initial access vector)
+cmd:
+- $PY
+- $SIM/blackenergy3/simulation.py
+- --plc-ip
+- '{power}'
+- --plc-port
+- '2404'
+- --hmi-ip
+- '{hmi}'
+- --duration
+- '15'
+cmd_lab:
+- $PY
+- $SIM/blackenergy3/simulation.py
+- --plc-ip
+- '{power}'
+- --plc-port
+- '2404'
+- --duration
+- '90'
+- --substation
+- --sim-killdisk
+watch:
+  plc: power
+  proto: iec104
+  kind: power
+  restore: power
+it_phase: $SCRIPTS/blackenergy3_it_phase.py

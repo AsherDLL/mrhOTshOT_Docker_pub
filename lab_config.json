@@ -1,0 +1,182 @@
+{
+  "esxi": {
+    "host": "10.3.229.3",
+    "user": "user",
+    "note": "password via env var ESXI_PASS"
+  },
+  "networks": {
+    "it": {
+      "subnet": "192.168.0.0/24",
+      "port_group": "Internal Clean Network",
+      "vswitch": "vSwitch1"
+    },
+    "ot": {
+      "subnet": "192.168.1.0/24",
+      "port_group": "Internal Clean Network",
+      "vswitch": "vSwitchClean"
+    },
+    "management": {
+      "subnet": "192.168.100.0/24"
+    },
+    "esxi_mgmt": {
+      "subnet": "10.3.229.0/24"
+    }
+  },
+  "gateway": "192.168.1.1",
+  "dns": {
+    "primary": "10.5.6.8",
+    "secondary": "10.5.6.9"
+  },
+  "default_credentials": {
+    "username": "operator",
+    "password": "labpass123",
+    "note": "Used on all PLCs and most VMs. Lab is air-gapped/walled - only authorized IPs have access."
+  },
+  "firewall": {
+    "name": "PA-VM-ESX-10.2.0",
+    "interfaces": {
+      "mgmt": "10.3.229.5",
+      "it": "192.168.0.2",
+      "ot": "192.168.1.1",
+      "management_net": "192.168.100.1"
+    },
+    "port_groups": ["VM Network", "Anon Network", "Internal Clean Network x2", "Internal Malicious Network"]
+  },
+  "machines": {
+    "active": [
+      {
+        "name": "Attacker Machine - Kali Linux",
+        "ip": "192.168.0.11",
+        "network": "IT",
+        "os": "Kali Linux",
+        "port_group": "Internal Clean Network",
+        "role": "attacker"
+      },
+      {
+        "name": "Windows 10 - OTSOC HMI",
+        "ip": "192.168.1.55",
+        "network": "OT",
+        "os": "Windows 10",
+        "port_group": "Internal Clean Network",
+        "role": "hmi",
+        "software": "ICONICS GraphWorX64"
+      },
+      {
+        "name": "historian ot",
+        "ip": "192.168.1.9",
+        "network": "OT",
+        "os": "Windows 10",
+        "port_group": "Internal Clean Network",
+        "role": "historian",
+        "software": "ICONICS GENESIS64 + Hyper Historian",
+        "secondary_nic": "VM Network"
+      },
+      {
+        "name": "openplc",
+        "ip": "192.168.1.6",
+        "network": "OT",
+        "os": "Debian Linux",
+        "port_group": "Internal Clean Network",
+        "role": "legacy_plc",
+        "note": "Original single water tank PLC - superseded by PLC fleet"
+      },
+      {
+        "name": "PLC-1-WaterTreatment",
+        "ip": "192.168.1.10",
+        "network": "OT",
+        "os": "Debian Linux",
+        "port_group": "Internal Clean Network",
+        "role": "plc",
+        "process": "Water Treatment",
+        "protocols": ["IEC-104", "Modbus TCP"]
+      },
+      {
+        "name": "PLC-2-PowerSubstation",
+        "ip": "192.168.1.11",
+        "network": "OT",
+        "os": "Debian Linux",
+        "port_group": "Internal Clean Network",
+        "role": "plc",
+        "process": "Power Substation",
+        "protocols": ["IEC 61850", "GOOSE"]
+      },
+      {
+        "name": "PLC-3-GasPipeline",
+        "ip": "192.168.1.12",
+        "network": "OT",
+        "os": "Debian Linux",
+        "port_group": "Internal Clean Network",
+        "role": "plc",
+        "process": "Gas Pipeline",
+        "protocols": ["OPC-UA", "MELSEC"]
+      },
+      {
+        "name": "PLC-4-Manufacturing",
+        "ip": "192.168.1.13",
+        "network": "OT",
+        "os": "Debian Linux",
+        "port_group": "Internal Clean Network",
+        "role": "plc",
+        "process": "Manufacturing Line",
+        "protocols": ["S7comm", "EtherNet/IP"]
+      },
+      {
+        "name": "PLC-5-BuildingHVAC",
+        "ip": "192.168.1.14",
+        "network": "OT",
+        "os": "Debian Linux",
+        "port_group": "Internal Clean Network",
+        "role": "plc",
+        "process": "Building HVAC",
+        "protocols": ["BACnet/IP"]
+      },
+      {
+        "name": "PLC-6-BoilerHouse",
+        "ip": "192.168.1.15",
+        "network": "OT",
+        "os": "Debian Linux",
+        "port_group": "Internal Clean Network",
+        "role": "plc",
+        "process": "Boiler House",
+        "protocols": ["TriStation UDP/1502"]
+      },
+      {
+        "name": "ot soc xsoar engine",
+        "ip": "192.168.1.50",
+        "network": "OT",
+        "os": "Ubuntu Linux",
+        "port_group": "Internal Clean Network",
+        "role": "xsoar_engine"
+      },
+      {
+        "name": "Iconics Suite V11 - Active License",
+        "ip": "192.168.1.20",
+        "ip_secondary": "10.3.229.199",
+        "hostname": "DESKTOP-5UK4J28",
+        "network": "OT",
+        "os": "Windows 10",
+        "port_group": "Internal Clean Network",
+        "secondary_nic": "VM Network",
+        "role": "iconics_hmi",
+        "software": "ICONICS GENESIS64 V11 - Active License",
+        "credentials": "operator:labpass123 or check Windows creds"
+      }
+    ],
+    "inactive": [
+      "Windows 10", "simulator VM CIP", "firmware_emulator",
+      "windows 10 (Patrick)", "kalilinux", "kali-2024", "cve_search",
+      "iconics suite - IT device ot soc", "test-iot-sensor",
+      "Windows 10 (Patrick)", "emulated router - operator",
+      "Win11-DeviceTester1", "Win11-DeviceTester2",
+      "ot-iot-lab-xsoar-engine2", "kali-2016",
+      "vinjoseph-3rd-party-sensor-tag-collector",
+      "Windows Sever 2022 - OTSOC Ad", "Iconics suite - vuln research",
+      "simulator VM Modbus"
+    ]
+  },
+  "esxi_credentials": {
+    "host": "10.3.229.3",
+    "user": "user",
+    "password": "LabPass123!"
+  }
+}

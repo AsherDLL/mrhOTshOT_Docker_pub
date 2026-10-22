@@ -1,0 +1,18 @@
+---
+
+- id: e6bd50b7-c083-4597-91b6-3ea4575b00f2
+  name: mrhOTshOT - Modbus Read Coils (verify impact, unit 11)
+  description: |
+    Re-read the heating PLC coils after manipulation to confirm the pump coil
+    flipped (plc-heating, Modbus unit id 11). Same read as the recon step, kept as
+    a distinct ability so it runs again at the end of the chain.
+  tactic: collection
+  technique_id: T0861
+  technique_name: Point & Tag Identification
+  executors:
+  - platform: linux
+    name: sh
+    command: >
+      ./modbus_cli #{modbus.server.ip} --port #{modbus.server.port} read_c #{modbus.read_coil.start} #{modbus.read_coil.count} -d #{modbus.device.id}
+    payloads:
+    - modbus_cli

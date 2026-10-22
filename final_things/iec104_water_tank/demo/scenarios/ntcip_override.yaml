@@ -1,0 +1,42 @@
+order: 12
+id: ntcip_override
+name: NTCIP Signal Override
+family: Transportation / NTCIP
+year: research
+protocol: NTCIP (SNMP)
+target: Traffic signal controller (plc-signals:161)
+desc: 'Traffic-signal attack over NTCIP/SNMP: SNMP-SET the phaseControlGroupHold object so the main street
+  (N/S) and cross street (E/W) are held green at the same time - the conflicting-greens condition a controller''s
+  conflict monitor exists to prevent. Read the phase-status objects to watch both approaches go green
+  at once.'
+color: '#e8b84b'
+briefing:
+- NTCIP SIGNAL OVERRIDE - transportation / traffic-control attack
+- NTCIP (traffic controllers, ramp meters, DMS) rides on SNMP, which in
+- the field is often v1/v2c with the community string 'public'.
+- The controller exposes the signal phases as NTCIP 1202 objects.
+- ''
+- WHAT WE ARE DOING
+- 1. SNMP GET the phase-status objects (recon)
+- 2. SNMP-SET phaseControlGroupHold = 0x0A (phases 2 + 4)
+- 3. The compromised controller holds both rings green - conflicting greens
+- 4. Loop the SET so the override persists
+- 'VISIBLE IMPACT: main (N/S) and cross (E/W) go green together - collision risk'
+- ''
+- MITRE ATT&CK for ICS (adapted)
+- T0855  Unauthorized Command Message (SNMP SET)
+- T0831  Manipulation of Control (phase hold)
+- T0836  Modify Parameter (NTCIP object)
+cmd:
+- $PY
+- $SIM/ntcip_override/simulation.py
+- --target
+- plc-signals
+- --port
+- '161'
+watch:
+  plc: signals
+  proto: ntcip
+  kind: intersection
+  label: Traffic Signal Controller
+  restore: signal

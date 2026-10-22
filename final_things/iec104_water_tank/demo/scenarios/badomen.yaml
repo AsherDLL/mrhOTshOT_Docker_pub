@@ -1,0 +1,51 @@
+order: 17
+id: badomen
+name: PIPEDREAM - BADOMEN FINS
+family: PIPEDREAM / INCONTROLLER (2022)
+year: '2022'
+protocol: OMRON FINS TCP :9600
+target: PLC-3 Gas Pipeline ({gas}:9600)
+desc: BADOMEN targets OMRON PLCs via FINS protocol (port 9600). PLC-3 gas pipeline runs fins_adapter.py
+  on :9600. Real FINS TCP frames are exchanged - memory poll, RESET and WIPE commands force the PLC into
+  error state.
+color: '#4db6ac'
+briefing:
+- PIPEDREAM BADOMEN - OMRON FINS Memory Attack
+- BADOMEN targets OMRON PLCs via FINS protocol. PLC-3 runs fins_adapter.py.
+- Real FINS TCP frames exchanged - visible in Wireshark on port 9600.
+- ''
+- 'WHAT WE ARE DOING:'
+- 1. OmronScanner.scan_host() - node address + controller data query
+- 2. FINSAttack.poll_devices() - enumerate PLC memory regions
+- 3. FINSAttack.reset_plc() - FINS RESET (force error state)
+- 4. FINSAttack.wipe_memory() - FINS WIPE (clear program memory)
+- 5. Alternating reset/wipe loop for attack duration
+- ''
+- ICS MITRE ATT&CK
+- T0855  Unauthorized Command Message (FINS RESET/WIPE)
+- T0816  Device Restart/Shutdown (FINS forced reset)
+- T0803  Block Command Message (PLC in error state)
+cmd:
+- $PY
+- $SIM/badomen_simulation.py
+- --target
+- '{gas}'
+- --port
+- '9600'
+- --duration
+- '15'
+cmd_lab:
+- $PY
+- $SIM/badomen_simulation.py
+- --target
+- '{gas}'
+- --port
+- '9600'
+- --duration
+- '90'
+watch:
+  plc: gas
+  proto: fins
+  kind: gas
+  restore: gas_fins
+it_phase: $SCRIPTS/pipedream_it_phase.py

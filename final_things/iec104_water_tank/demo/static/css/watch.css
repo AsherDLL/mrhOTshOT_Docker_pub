@@ -1,0 +1,517 @@
+/* Visualizer - inherits the dashboard tokens/typography from app.css (:root). */
+
+.viz-body { min-height: 100vh; display: flex; flex-direction: column; }
+
+/* header */
+.viz-top { display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 14px 26px; border-bottom: 1px solid var(--border);
+  background: var(--bg-2); }
+.viz-top-left { display: flex; align-items: center; gap: 18px; }
+.viz-titles h1.viz-proc { font-size: 21px; font-weight: 700; }
+.viz-sub { font-family: var(--mono); font-size: 12px; color: var(--muted); letter-spacing: .03em; margin-top: 3px; }
+.viz-top-right { display: flex; align-items: center; gap: 9px; }
+.viz-status { font-family: var(--mono); font-weight: 700; font-size: 12px; letter-spacing: .12em; }
+.viz-status.s-normal { color: var(--ok); } .viz-status.s-warning { color: var(--warn); }
+.viz-status.s-critical { color: var(--bad); } .viz-status.s-offline { color: var(--faint); }
+
+/* no-process view */
+.viz-noviz { flex: 1; display: grid; place-items: center; padding: 40px 24px; }
+.viz-noviz-card { max-width: 60ch; padding: 26px 30px; }
+.viz-noviz-card h2 { font-size: 20px; font-weight: 700; margin-bottom: 10px; }
+.viz-noviz-card p { color: var(--muted); line-height: 1.6; margin-bottom: 8px; }
+
+/* dramatic alert banner */
+.viz-banner { max-height: 0; overflow: hidden; text-align: center; font-family: var(--mono);
+  font-weight: 700; letter-spacing: .03em; transition: max-height .25s ease; line-height: 1.4;
+  display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap;
+  flex-shrink: 0; position: relative; z-index: 2; }
+.viz-banner.show { max-height: 300px; padding: 14px 22px; font-size: 14.5px; }
+.viz-banner.show span { font-size: 17px; }
+.viz-banner.warning { background: rgba(216,161,40,.16); color: var(--warn); border-bottom: 2px solid var(--warn); }
+.viz-banner.critical { background: var(--bad); color: #fff; border-bottom: 2px solid #ff8a8a;
+  animation: bannerflash .9s steps(1) infinite; }
+@keyframes bannerflash { 0%,100% { background: var(--bad); } 50% { background: #7c1e21; } }
+
+/* layout: HMI pane + control column */
+.viz-main { flex: 1; width: 100%; max-width: 1160px; margin: 0 auto; align-items: stretch;
+  display: grid; grid-template-columns: 1fr 320px; gap: 18px; padding: 22px 26px 40px; }
+@media (max-width: 860px) { .viz-main { grid-template-columns: 1fr; } }
+
+.viz-hmi { padding: 0; overflow: hidden; display: flex; flex-direction: column; }
+.viz-hmi-head { display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 12px 18px; border-bottom: 1px solid var(--border);
+  font-family: system-ui, sans-serif; font-weight: 600; }
+.viz-hmi-tag { font-family: var(--mono); font-size: 10px; letter-spacing: .18em; color: var(--accent-2);
+  border: 1px solid rgba(91,143,176,.35); border-radius: 5px; padding: 3px 8px; }
+.viz-stage { padding: 16px 18px 20px; flex: 1; display: flex; flex-direction: column; }
+/* the process SVG grows to fill the card so it matches the control column's height */
+.viz-stage > svg { flex: 1; min-height: 0; width: 100%; height: 100%; }
+
+/* control column */
+.viz-side { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.viz-group { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 13px 14px; }
+.viz-group-atk { border-color: rgba(200,68,63,.45); background: var(--panel); }
+.viz-group-title { font-family: var(--mono); font-size: 10px; letter-spacing: .16em; text-transform: uppercase;
+  color: var(--faint); margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+.viz-group .btn { width: 100%; justify-content: center; margin-top: 8px; }
+.viz-group .btn:first-of-type { margin-top: 0; }
+.viz-hint { margin-left: auto; text-transform: none; letter-spacing: .04em; color: var(--faint); }
+.btn-atk { background: var(--run); border-color: transparent; color: #fff; font-weight: 700; }
+.btn-atk:hover { background: var(--run-2); border-color: transparent; }
+.btn-warn { background: var(--warn); border-color: transparent; color: #241a05; font-weight: 700; }
+.btn-warn:hover { background: #e6b23a; border-color: transparent; color: #241a05; }
+.viz-group-log { display: flex; flex-direction: column; flex: 1; min-height: 200px; }
+.viz-group-log .console-body { margin-top: 4px; min-height: 170px; max-height: 300px; border-radius: 8px;
+  background: var(--bg-2); border: 1px solid var(--border); }
+
+/* capture toggle (attack pane) */
+.viz-cap { display: flex; align-items: center; gap: 8px; margin-top: 12px; cursor: pointer;
+  font-family: var(--mono); font-size: 11px; letter-spacing: .02em; color: var(--muted); }
+.viz-cap input { accent-color: var(--stop); width: 14px; height: 14px; cursor: pointer; margin: 0; }
+.viz-cap:hover { color: var(--text); }
+
+/* expandable Activity pane */
+.viz-log-exp { margin-left: 8px; padding: 0; width: 22px; height: 20px; line-height: 1; font-size: 12px;
+  cursor: pointer; border: 1px solid var(--border-2); border-radius: 5px; color: var(--muted); background: none; }
+.viz-log-exp:hover { color: var(--text); border-color: var(--muted); }
+.viz-group-log.expanded { position: fixed; inset: 24px; z-index: 60; margin: 0;
+  box-shadow: var(--shadow); }
+.viz-group-log.expanded .console-body { max-height: none; flex: 1; }
+
+/* simulation stopped: dim the stage to signal "off / not running" */
+.viz-stage.sim-off { opacity: .4; filter: saturate(.35); transition: opacity .3s ease; }
+
+/* Launch disabled until the simulation is started */
+.btn:disabled { opacity: .4; cursor: not-allowed; box-shadow: none; }
+
+/* readouts (shared by modules) - one segmented instrument strip, not nested tiles */
+.viz-readouts { display: grid; grid-template-columns: repeat(4, 1fr); margin-bottom: 16px;
+  border-bottom: 1px solid var(--border); }
+.ro { padding: 2px 10px 13px; text-align: center; border-right: 1px solid var(--border); }
+.ro:last-child { border-right: none; }
+.ro-v { display: block; font-family: var(--mono); font-weight: 500; font-size: 24px; color: var(--text); line-height: 1; font-variant-numeric: tabular-nums; }
+.ro-u { display: block; margin-top: 7px; font-family: var(--mono); font-size: 10px; letter-spacing: .06em; color: var(--muted); }
+/* attacker-injected value: red + pulse so it stands out from the green legit value */
+.ro-v.injected { color: var(--bad); animation: ro-pulse 1s ease-in-out infinite; }
+.cent-hmi.injected { animation: ro-pulse 1s ease-in-out infinite; }
+@keyframes ro-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .4; } }
+.viz-readouts.cols-5 { grid-template-columns: repeat(5, 1fr); }
+
+/* ── protocol I/O map (registers/coils/points this attack reads & writes) ─────── */
+.viz-io { grid-column: 1 / -1; padding: 0; overflow: hidden; }
+.viz-io-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 11px 16px; border-bottom: 1px solid var(--border); }
+.viz-io-tag { font-family: var(--mono); font-size: 10px; letter-spacing: .18em; color: var(--accent-2); border: 1px solid rgba(91,143,176,.35); border-radius: 5px; padding: 3px 8px; }
+.viz-io-ep { font-family: var(--mono); font-size: 12px; color: var(--text); }
+.viz-io-hint { margin-left: auto; font-size: 11px; color: var(--faint); }
+.viz-io-scroll { max-height: 320px; overflow: auto; }
+.viz-io-table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 12px; }
+.viz-io-table th { position: sticky; top: 0; z-index: 1; background: var(--bg-2); text-align: left; font-weight: 600; font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: var(--faint); padding: 8px 14px; border-bottom: 1px solid var(--border); }
+.viz-io-table td { padding: 6px 14px; border-bottom: 1px solid var(--border); color: var(--muted); vertical-align: top; }
+.viz-io-table tr:last-child td { border-bottom: none; }
+.viz-io-table td.io-addr { color: var(--text); white-space: nowrap; }
+.viz-io-table td.io-type { color: var(--faint); font-size: 11px; white-space: nowrap; }
+.viz-io-table td.io-val, .viz-io-table th.viz-io-val { text-align: right; }
+.viz-io-table td.io-val { color: var(--text); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.io-dir { font-weight: 700; width: 40px; }
+.io-r { color: var(--accent-2); }        /* read  = steel */
+.io-w { color: var(--warn); }            /* write = amber (attacker action) */
+.io-rw { color: var(--warn); }           /* read+write = amber */
+
+/* ── district heating control loop (FrostyGoop) ─────────────────── */
+.heat-svg { width: 100%; height: auto; }
+.h-title { fill: var(--muted); font-family: var(--mono); font-size: 11px; letter-spacing: .09em; }
+.h-lbl { fill: var(--muted); font-family: var(--mono); font-size: 10px; letter-spacing: .06em; }
+.h-eq-tag { fill: var(--faint); font-family: var(--mono); font-size: 9px; letter-spacing: .08em; }
+.h-src-st { fill: var(--muted); font-family: var(--mono); font-size: 11px; font-weight: 700; }
+/* heat source: beveled boiler housing + recessed firebox with a layered flame + glow */
+.h-boiler { fill: url(#h-bezel); stroke: #000; stroke-opacity: .5; stroke-width: 1; }
+.h-boiler-lip { fill: #ffffff; opacity: .06; }
+.h-firebox { fill: #07090c; stroke: #241812; stroke-width: 1.5; }
+.h-glow { fill: url(#h-flameglow); opacity: 0; transition: opacity .5s; }
+.h-glow.on { opacity: 1; }
+.h-flame-o { fill: #4a2c10; transition: fill .4s; }
+.h-flame-i { fill: #2f2008; transition: fill .4s; }
+.h-flame.on .h-flame-o { fill: #ff8a2a; }
+.h-flame.on .h-flame-i { fill: #ffd25a; }
+.h-flame.on { animation: hflicker 1.7s ease-in-out infinite; transform-box: fill-box; transform-origin: center bottom; }
+/* supply pipe, coloured by the real supply-temp band */
+.h-pipe { stroke: #3a4250; stroke-width: 9; stroke-linecap: round; fill: none; transition: stroke .6s; }
+.h-pipe.h-hot { stroke: #d98a4a; }
+.h-pipe.h-warm { stroke: #c9922e; }
+.h-pipe.h-cold { stroke: #4a86c9; }
+.h-pipe.flowing { stroke-dasharray: 14 9; animation: hflow .7s linear infinite; }
+/* supply-temp gauge: beveled tube, glossy fill, freeze zone, setpoint + HMI markers */
+.h-gauge-case { fill: url(#h-bezel); stroke: #000; stroke-opacity: .5; stroke-width: 1; }
+.h-therm-track { fill: #06080b; }
+.h-freeze { fill: rgba(200,68,63,.14); }
+.h-therm-fill { transition: y .6s ease, height .6s ease, fill .4s; }
+.h-therm-fill.h-hot { fill: #d98a4a; }
+.h-therm-fill.h-warm { fill: #c9922e; }
+.h-therm-fill.h-cold { fill: #4a86c9; }
+.h-gauge-glass { fill: url(#h-glass); pointer-events: none; }
+.h-gauge-lbl { fill: var(--muted); font-family: var(--mono); font-size: 10px; letter-spacing: .06em; }
+.h-tick { fill: var(--muted); font-family: var(--mono); font-size: 9px; font-variant-numeric: tabular-nums; }
+.h-tickline { stroke: var(--faint); stroke-width: 1; }
+.h-tickline.maj { stroke: var(--muted); stroke-width: 1.4; }
+.h-sp-line { stroke: var(--text); stroke-width: 1.5; }
+.h-sp-tri { fill: var(--text); }
+.h-sp-lbl { fill: var(--text); font-family: var(--mono); font-size: 9px; font-weight: 700; }
+.h-hmi-tri { fill: var(--accent-2); transition: fill .3s; }
+.h-hmi-txt { fill: var(--accent-2); font-family: var(--mono); font-size: 9px; font-weight: 700; }
+#h-hmi-mark { transition: transform .6s ease; }
+/* heating controller faceplate */
+.h-ctl-bg { fill: url(#h-panel); stroke: #000; stroke-opacity: .5; stroke-width: 1; }
+.h-ctl-hdr { fill: url(#h-hdrgrad); }
+.h-ctl-hdr-b { fill: var(--accent); opacity: .5; }
+.h-ctl-title { fill: var(--text); font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: .04em; }
+.h-ctl-sub { fill: var(--faint); font-family: var(--mono); font-size: 9px; }
+.h-ctl-k { fill: var(--muted); font-family: var(--mono); font-size: 10px; letter-spacing: .04em; }
+.h-ctl-v { fill: var(--text); font-family: var(--mono); font-size: 13px; font-variant-numeric: tabular-nums; }
+.h-ctl-rule { stroke: var(--border); stroke-width: 1; }
+.h-ctl-note { fill: var(--faint); font-family: var(--mono); font-size: 9px; }
+.h-chip { fill: var(--panel-2); stroke: var(--border-2); stroke-width: 1; }
+.h-chip.on { fill: rgba(63,157,90,.18); stroke: var(--ok); }
+.h-chip.off { fill: var(--panel-2); stroke: var(--border-2); }
+.h-chip.ok { fill: rgba(63,157,90,.18); stroke: var(--ok); }
+.h-chip.held { fill: rgba(200,68,63,.16); stroke: var(--bad); }
+.h-chip-t { fill: var(--text); font-family: var(--mono); font-size: 10px; font-weight: 700; }
+@keyframes hflow { to { stroke-dashoffset: -23; } }
+@keyframes hflicker { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(.92); } }
+@media (prefers-reduced-motion: reduce) {
+  .h-flame.on, .h-pipe.flowing { animation: none !important; }
+}
+
+/* ── power substation single-line diagram ─────────────────────── */
+.pwr-svg { width: 100%; height: auto; }
+.p-lbl { fill: var(--muted); font-family: var(--mono); font-size: 10px; letter-spacing: .06em; }
+.p-tower { fill: none; stroke: var(--faint); stroke-width: 2; }
+.p-line, .p-bus { stroke: #46505f; fill: none; stroke-linecap: round; transition: stroke .4s; }
+.p-line { stroke-width: 3; } .p-bus { stroke-width: 8; }
+.p-line.hot, .p-bus.hot { stroke: #d89a34; }
+.p-line.dead, .p-bus.dead { stroke: #3a2a2a; }
+.p-term { fill: var(--panel-2); stroke: var(--border-2); stroke-width: 1.5; }
+.p-arm { stroke: var(--ok); stroke-width: 3.5; stroke-linecap: round;
+  transform-box: fill-box; transform-origin: center; transition: transform .3s ease, stroke .3s; }
+.p-brk.open .p-arm { stroke: var(--bad); transform: rotate(-34deg) translateY(-2px); }
+.p-brk.open .p-term { stroke: var(--bad); }
+.p-coil { fill: none; stroke: var(--faint); stroke-width: 2.5; transition: stroke .4s; }
+.p-bld { fill: #171c24; stroke: #2c3542; stroke-width: 1.5; transition: fill .4s; }
+.p-win { fill: #232a33; transition: fill .5s; }
+.p-city.lit .p-win { fill: #ffcf6b; }
+.p-city.lit .p-bld { stroke: #4a5566; }
+.p-city.dark .p-win { fill: #191d24; }
+.p-city.dark .p-bld { fill: #10141a; }
+
+/* ── gas compressor station ───────────────────────────────────── */
+.gas-svg { width: 100%; height: auto; }
+.g-lbl { fill: var(--muted); font-family: var(--mono); font-size: 10px; letter-spacing: .06em; }
+.g-red { fill: var(--bad); font-family: var(--mono); font-size: 10px; }
+.gas-src { fill: var(--panel-2); stroke: var(--border-2); stroke-width: 2; }
+.gas-dist { fill: #171c24; stroke: #2c3542; stroke-width: 1.5; }
+.gas-pipe { stroke: #4a86c9; stroke-width: 9; stroke-linecap: round; fill: none; transition: stroke .4s; }
+.gas-pipe.flowing { stroke-dasharray: 14 8; animation: gflow .7s linear infinite; }
+.gas-valve .g-vbody { fill: var(--ok); stroke: #0d0f11; stroke-width: 1; transition: fill .3s; }
+.gas-valve.closed .g-vbody { fill: var(--bad); }
+.gas-comp-body { fill: var(--panel-2); stroke: var(--border-2); stroke-width: 2; }
+.g-imp path { stroke: var(--muted); stroke-width: 2.5; fill: none; }
+.gas-comp.running .g-comp-body { stroke: var(--accent-2); }
+.gas-comp.running .g-imp path { stroke: var(--accent-2); }
+.gas-comp.running .g-imp { animation: gspin 1.1s linear infinite; transform-box: fill-box; transform-origin: center; }
+.gas-burst { fill: #ff8a2a; stroke: #ffd27a; stroke-width: 2; opacity: 0; }
+.gas-ruptured .gas-burst { opacity: 1; animation: gburst .7s steps(2) infinite; }
+.gas-ruptured .gas-pipe { stroke: #5a2a2a; }
+.gas-bar-bg { fill: var(--bg-2); stroke: var(--border); stroke-width: 1; }
+.gas-bar { transition: width .5s ease, fill .4s; }
+.gas-redline { stroke: var(--bad); stroke-width: 2; stroke-dasharray: 3 3; }
+.gas-ruptured .gas-src, .gas-ruptured .gas-dist { opacity: .4; }
+/* BADOMEN monitoring-lost overlay */
+.gas-nosig { opacity: 0; transition: opacity .3s; pointer-events: none; }
+.gas-nosignal .gas-nosig { opacity: 1; }
+.g-nosig-t { fill: var(--bad); font-family: var(--mono); font-size: 24px; font-weight: 700; letter-spacing: .14em; }
+.g-nosig-s { fill: #c8ccd2; font-family: var(--mono); font-size: 12px; letter-spacing: .06em; }
+@keyframes gspin { to { transform: rotate(360deg); } }
+@keyframes gflow { to { stroke-dashoffset: -22; } }
+@keyframes gburst { 0%,100% { opacity: 1; } 50% { opacity: .55; } }
+
+/* generic fallback */
+.viz-generic { text-align: center; padding: 10px 6px 0; }
+.viz-generic-chip { display: inline-block; font-family: var(--mono); font-size: 11px; letter-spacing: .12em;
+  padding: 5px 12px; border-radius: 6px; border: 1px solid var(--border-2); color: var(--muted); }
+.viz-generic-chip.live { color: var(--ok); border-color: rgba(63,185,80,.4); }
+.viz-generic-chip.off { color: var(--faint); }
+.viz-generic p { color: var(--muted); line-height: 1.6; max-width: 56ch; margin: 14px auto 0; font-size: 13px; }
+.viz-generic p span { color: var(--faint); }
+
+/* ── safety-instrumented system (TRITON) ──────────────────────── */
+.sis-svg { width: 100%; height: auto; }
+.sis-lbl { fill: var(--muted); font-family: var(--mono); font-size: 10px; letter-spacing: .06em; }
+.sis-src { fill: var(--panel-2); stroke: var(--border-2); stroke-width: 1.5; }
+.sis-pipe { stroke: #46505f; stroke-width: 6; fill: none; stroke-linecap: round; transition: stroke .4s; }
+.sis-pipe.flowing { stroke: #4a86c9; stroke-dasharray: 14 8; animation: sflow .7s linear infinite; }
+.sis-valve .sis-vbody { fill: #3a4250; stroke: #0d0f11; stroke-width: 1; transition: fill .3s; }
+.sis-valve.open .sis-vbody { fill: #4a86c9; }
+/* tank + fill */
+.sis-tank { fill: #141a22; stroke: #2c3542; stroke-width: 2; transition: stroke .5s; }
+.sis-fill { transition: y .5s ease, height .5s ease, fill .4s; }
+.sis-fill-lo { fill: #2f6ea8; } .sis-fill-mid { fill: var(--warn); }
+.sis-fill-hi { fill: var(--bad); } .sis-fill-rupt { fill: #3a1414; }
+.sis-surf { stroke: rgba(255,255,255,.5); stroke-width: 2; transition: y1 .5s ease, y2 .5s ease; }
+.sis-trip { stroke: var(--bad); stroke-width: 2; stroke-dasharray: 6 4; }
+.sis-trip-lbl { fill: var(--bad); font-family: var(--mono); font-size: 10px; letter-spacing: .08em; }
+.sis-over { stroke: var(--faint); stroke-width: 1; stroke-dasharray: 2 4; opacity: .6; }
+.sis-burst path { fill: #ff8a2a; stroke: #ffd08a; stroke-width: 1.5; animation: sburst .5s ease-in-out infinite; }
+.sis-ruptured .sis-tank { stroke: var(--bad); }
+/* SIS controller box */
+.sis-box-bg { fill: #10151c; stroke: var(--border-2); stroke-width: 1.5; }
+.sis-box-hdr, .sis-box-hdr2 { fill: var(--bg-2); }
+.sis-box-title { fill: var(--accent-2); font-family: var(--mono); font-size: 11px; letter-spacing: .12em; }
+.sis-detail { fill: var(--muted); font-family: var(--mono); font-size: 10px; letter-spacing: .05em; }
+/* shield: guarding (green) / tripped (amber) / bypassed (red) */
+.sis-shield-body { fill: #101821; stroke-width: 2.5; transition: stroke .4s, fill .4s; }
+.sis-ic { fill: none; stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; opacity: 0; transition: opacity .3s; }
+.sis-shield.guarding .sis-shield-body { stroke: var(--ok); fill: rgba(63,185,80,.08); }
+.sis-shield.guarding #sis-ic-ok { opacity: 1; stroke: var(--ok); }
+.sis-shield.tripped .sis-shield-body { stroke: var(--warn); fill: rgba(216,161,40,.10); }
+.sis-shield.tripped #sis-ic-trip { opacity: 1; stroke: var(--warn); }
+.sis-shield.bypassed .sis-shield-body { stroke: var(--bad); fill: rgba(200,68,63,.12); }
+.sis-shield.bypassed #sis-ic-bad { opacity: 1; stroke: var(--bad); }
+/* safety loop wire: armed / active (trip travelling) / severed (halted) */
+.sis-loop { fill: none; stroke-width: 2.5; transition: stroke .4s; }
+.sis-loop.armed { stroke: var(--ok); }
+.sis-loop.active { stroke: var(--warn); stroke-dasharray: 10 5; animation: sflow .6s linear infinite; }
+.sis-loop.severed { stroke: #4a5260; stroke-dasharray: 4 6; opacity: .65; }
+.sis-loop-lbl { fill: var(--muted); font-family: var(--mono); font-size: 9px; letter-spacing: .1em; }
+@keyframes sflow { to { stroke-dashoffset: -22; } }
+@keyframes sburst { 0%,100% { opacity: 1; } 50% { opacity: .55; } }
+
+/* ── centrifuge cascade (Stuxnet / Natanz IR-1) ───────────────── */
+.cent-svg { width: 100%; height: auto; }
+.cent-cascade-lbl { fill: var(--muted); font-family: var(--mono); font-size: 11px; letter-spacing: .14em; }
+.cent-lbl { fill: var(--muted); font-family: var(--mono); font-size: 10px; letter-spacing: .06em; }
+/* rotor */
+.cent-cap { fill: #2b333f; stroke: #0d0f11; stroke-width: 1; }
+.cent-spin { transform-box: fill-box; transform-origin: center; animation: cspin 1s linear infinite; }
+.cent-spoke { stroke: #8fa0b4; stroke-width: 2; stroke-linecap: round; }
+.cent-casing { fill: #141a22; stroke: #2c3542; stroke-width: 2; transition: stroke .4s, fill .4s; }
+.cent-track { fill: #0e1319; stroke: #232b36; stroke-width: 1; }
+.cent-redzone { fill: rgba(200,68,63,.14); }
+.cent-fill { transition: y .5s ease, height .5s ease, fill .4s; }
+.cent-ok { fill: var(--accent-2); }        /* teal - nominal */
+.cent-over { fill: var(--bad); }           /* red - overspeed */
+.cent-under { fill: var(--warn); }         /* amber - understeed */
+.cent-dead { fill: #2a1212; }
+.cent-tick { stroke: rgba(255,255,255,.35); stroke-width: 1; stroke-dasharray: 3 3; }
+.cent-crack { fill: none; stroke: var(--bad); stroke-width: 1.5; opacity: 0; transition: opacity .3s; }
+.cent-stub { stroke: #46505f; stroke-width: 4; stroke-linecap: round; }
+.cent-pipe { stroke: #46505f; stroke-width: 5; stroke-linecap: round; }
+.cent-src { fill: var(--panel-2); stroke: var(--border-2); stroke-width: 1.5; }
+/* labels under each rotor */
+.cent-name { fill: var(--muted); font-family: var(--mono); font-size: 11px; letter-spacing: .1em; }
+.cent-status { font-family: var(--mono); font-size: 10px; letter-spacing: .08em; }
+.cent-t-ok { fill: var(--ok); } .cent-t-warn { fill: var(--warn); } .cent-t-bad { fill: var(--bad); }
+.cent-cmd { fill: #c6d0dc; font-family: var(--mono); font-size: 10px; }
+.cent-hmi { fill: var(--muted); font-family: var(--mono); font-size: 10px; }
+.cent-hmi.spoofed { fill: var(--bad); text-decoration: line-through; }
+/* overspeed shake + destroyed rotor */
+.cent.over .cent-rotor { animation: cshake .11s linear infinite; }
+.cent.dead .cent-rotor { transform: rotate(3deg); transform-origin: center; opacity: .55; }
+.cent.dead .cent-casing { fill: #180d0d; stroke: var(--bad); }
+.cent.dead .cent-crack { opacity: 1; }
+.cent.dead .cent-spin { animation: none; }
+/* Siemens S7 PLC panel */
+.cent-plc-bg { fill: #10151c; stroke: var(--border-2); stroke-width: 1.5; }
+.cent-plc-hdr, .cent-plc-hdr2 { fill: var(--bg-2); }
+.cent-plc-title { fill: var(--accent-2); font-family: var(--mono); font-size: 11px; letter-spacing: .1em; }
+.cent-plc-sub { fill: var(--faint); font-family: var(--mono); font-size: 9px; letter-spacing: .08em; }
+.cent-db-k { fill: var(--muted); font-family: var(--mono); font-size: 10px; }
+.cent-db-v { fill: #c6d0dc; font-family: var(--mono); font-size: 11px; }
+.cent-db-rule { stroke: var(--border-2); stroke-width: 1; opacity: .5; }
+.cent-chip { transition: fill .3s, stroke .3s; }
+.cent-chip.secure { fill: rgba(63,185,80,.15); stroke: var(--ok); stroke-width: 1; }
+.cent-chip.infected { fill: rgba(200,68,63,.18); stroke: var(--bad); stroke-width: 1; }
+.cent-chip-t { font-family: var(--mono); font-size: 10px; letter-spacing: .1em; fill: #dfe7ef; }
+.cent-plc-note { fill: var(--muted); font-family: var(--mono); font-size: 10px; }
+.cent-plc-note2 { fill: var(--faint); font-family: var(--mono); font-size: 9px; }
+@keyframes cspin { to { transform: rotate(360deg); } }
+@keyframes cshake { 0%,100% { transform: translate(0,0); } 25% { transform: translate(1.2px,0); }
+  50% { transform: translate(-1.2px,0); } 75% { transform: translate(.8px,0); } }
+
+/* ── DNP3 water distribution utility (Industroyer DNP3) ───────── */
+.ut-svg { width: 100%; height: auto; }
+.ut-title { fill: var(--muted); font-family: var(--mono); font-size: 11px; letter-spacing: .12em; }
+.ut-lbl { fill: var(--muted); font-family: var(--mono); font-size: 10px; letter-spacing: .05em; }
+/* pump stations */
+.ut-pump-c { stroke-width: 2.5; transition: stroke .4s, fill .4s; }
+.ut-imp line { stroke: #0d1117; stroke-width: 2.5; stroke-linecap: round; }
+.ut-imp { transform-box: fill-box; transform-origin: center; }
+.ut-pump.running .ut-pump-c { fill: rgba(63,185,80,.18); stroke: var(--ok); }
+.ut-pump.running .ut-imp { animation: cspin .9s linear infinite; }
+.ut-pump.stopped .ut-pump-c { fill: rgba(242,85,85,.16); stroke: var(--bad); }
+.ut-pump-st { font-family: var(--mono); font-size: 9px; letter-spacing: .08em; }
+.ut-pump.running .ut-pump-st { fill: var(--ok); }
+.ut-pump.stopped .ut-pump-st { fill: var(--bad); }
+/* pipes */
+.ut-pipe { stroke: #46505f; stroke-width: 6; fill: none; stroke-linecap: round; transition: stroke .4s; }
+.ut-pipe.flowing { stroke: #3f7cc4; stroke-dasharray: 12 7; animation: utflow .7s linear infinite; }
+/* reservoir */
+.ut-tank { fill: #141a22; stroke: #2c3542; stroke-width: 2; }
+.ut-fill { fill: #2f6ea8; transition: y .5s ease, height .5s ease, fill .4s; }
+.ut-fill.warn { fill: var(--warn); } .ut-fill.lowres { fill: var(--bad); }
+.ut-surf { stroke: rgba(255,255,255,.5); stroke-width: 2; transition: y1 .5s, y2 .5s; }
+.ut-low { stroke: var(--bad); stroke-width: 1.5; stroke-dasharray: 5 4; opacity: .8; }
+.ut-low-lbl { fill: var(--bad); font-family: var(--mono); font-size: 9px; }
+/* chlorination + pressure */
+.ut-cl-body { fill: rgba(91,143,176,.18); stroke: var(--accent-2); stroke-width: 1.5; }
+.ut-cl-v { fill: var(--accent-2); font-family: var(--mono); font-size: 10px; }
+.ut-prs-track { fill: #0e1319; stroke: #232b36; stroke-width: 1; }
+.ut-prs-fill { fill: var(--ok); transition: y .5s ease, height .5s ease, fill .4s; }
+.ut-prs-fill.low { fill: var(--bad); }
+.ut-prs-red { stroke: var(--bad); stroke-width: 1; stroke-dasharray: 2 3; opacity: .7; }
+/* city */
+.ut-city { transition: opacity .5s; }
+.ut-bldg { fill: #1c2530; stroke: #2c3542; stroke-width: 1; }
+.ut-win { fill: var(--warn); transition: fill .5s; }
+.ut-city.dim { opacity: .7; } .ut-city.dim .ut-win { fill: #6b5a20; }
+.ut-city.dark { opacity: .5; } .ut-city.dark .ut-win { fill: #2a2a2a; }
+/* DNP3 control panel */
+.ut-panel-bg { fill: #10151c; stroke: var(--border-2); stroke-width: 1.5; }
+.ut-panel-hdr, .ut-panel-hdr2 { fill: var(--bg-2); }
+.ut-panel-title { fill: var(--accent-2); font-family: var(--mono); font-size: 11px; letter-spacing: .1em; }
+.ut-panel-sub { fill: var(--faint); font-family: var(--mono); font-size: 9px; letter-spacing: .06em; }
+.ut-k { fill: var(--muted); font-family: var(--mono); font-size: 10px; }
+.ut-chip { transition: fill .3s, stroke .3s; }
+.ut-chip.auto, .ut-chip.ok { fill: rgba(63,185,80,.15); stroke: var(--ok); stroke-width: 1; }
+.ut-chip.manual, .ut-chip.rogue { fill: rgba(242,85,85,.18); stroke: var(--bad); stroke-width: 1; }
+.ut-chip-t { font-family: var(--mono); font-size: 10px; letter-spacing: .08em; fill: #dfe7ef; }
+.ut-rule { stroke: var(--border-2); stroke-width: 1; opacity: .5; }
+.ut-led { fill: #222c38; stroke: #3a4453; stroke-width: 1; transition: fill .3s; }
+.ut-led.warn { fill: var(--warn); } .ut-led.bad { fill: var(--bad); }
+.ut-al { fill: var(--muted); font-family: var(--mono); font-size: 9px; letter-spacing: .04em; }
+.ut-note { fill: var(--faint); font-family: var(--mono); font-size: 10px; }
+@keyframes utflow { to { stroke-dashoffset: -19; } }
+
+/* ── M-Bus sensor gateway (Fuxnet) ───────────────────────────── */
+.sn-svg { width: 100%; height: auto; }
+.sn-lbl { fill: var(--muted); font-family: var(--mono); font-size: 10px; letter-spacing: .08em; }
+/* M-Bus trunk + branches */
+.sn-trunk { stroke: #3f7cc4; stroke-width: 3; transition: stroke .4s; }
+.sn-trunk.severed { stroke: #3a4453; stroke-dasharray: 4 6; opacity: .5; }
+.sn-branch { stroke: #2c3542; stroke-width: 1.5; }
+/* sensor nodes: live (green pulse) / poison (amber) / dark (bricked) */
+.sn-node { stroke: #0d1117; stroke-width: 1; transition: fill .4s; }
+.sn-node.live { fill: var(--ok); animation: snpulse 1.7s ease-in-out infinite; }
+.sn-node.poison { fill: var(--warn); }
+.sn-node.dark { fill: #202932; stroke: #2c3542; }
+/* gateway box */
+.sn-gw-bg { fill: #10151c; stroke-width: 1.5; transition: stroke .4s; }
+.sn-gw-hdr, .sn-gw-hdr2 { fill: var(--bg-2); }
+.sn-gw-title { fill: var(--accent-2); font-family: var(--mono); font-size: 11px; letter-spacing: .08em; }
+.sn-gw-sub { fill: var(--faint); font-family: var(--mono); font-size: 9px; letter-spacing: .05em; }
+.sn-gw-led { transition: fill .3s; }
+.sn-gw-st { font-family: var(--mono); font-size: 12px; letter-spacing: .1em; }
+.sn-gw-kill { fill: var(--bad); font-family: var(--mono); font-size: 9px; letter-spacing: .06em; }
+.sn-gw.online .sn-gw-bg { stroke: var(--ok); } .sn-gw.online .sn-gw-led { fill: var(--ok); } .sn-gw.online .sn-gw-st { fill: var(--ok); }
+.sn-gw.corrupted .sn-gw-bg { stroke: var(--warn); } .sn-gw.corrupted .sn-gw-led { fill: var(--warn); } .sn-gw.corrupted .sn-gw-st { fill: var(--warn); }
+.sn-gw.offline .sn-gw-bg { stroke: var(--bad); } .sn-gw.offline .sn-gw-led { fill: var(--bad); } .sn-gw.offline .sn-gw-st { fill: var(--bad); }
+@keyframes snpulse { 0%,100% { opacity: 1; } 50% { opacity: .45; } }
+
+/* ── building HVAC (FrostyGoop / BACnet) ──────────────────────── */
+.hv-svg { width: 100%; height: auto; }
+.hv-lbl { fill: var(--muted); font-family: var(--mono); font-size: 10px; letter-spacing: .06em; }
+.hv-lbl2 { fill: var(--faint); font-family: var(--mono); font-size: 9px; }
+/* air path */
+.hv-air { stroke: #46505f; stroke-width: 6; stroke-linecap: round; }
+.hv-air.flow { stroke: #5b6675; stroke-dasharray: 12 8; animation: hvflow .8s linear infinite; }
+.hv-air.flow-cold { stroke: #3f7fd0; stroke-dasharray: 12 8; animation: hvflow .8s linear infinite; }
+.hv-air.flow-hot { stroke: #e8663a; stroke-dasharray: 12 8; animation: hvflow .5s linear infinite; }
+/* AHU housing */
+.hv-ahu { fill: #10151c; stroke: var(--border-2); stroke-width: 1.5; }
+.hv-ahu-tag { fill: var(--accent-2); font-family: var(--mono); font-size: 10px; letter-spacing: .08em; }
+/* coils */
+.hv-coil { fill: #141a22; stroke: #2c3542; stroke-width: 1.5; transition: fill .3s, stroke .3s; }
+.hv-coil-pipe { fill: none; stroke: #3a4250; stroke-width: 1.5; transition: stroke .3s; }
+.hv-coil-lbl { fill: var(--muted); font-family: var(--mono); font-size: 9px; letter-spacing: .06em; }
+#hv-cool.on .hv-coil-c { fill: rgba(63,127,208,.18); stroke: #3f7fd0; }
+#hv-cool.on .hv-coil-pipe { stroke: #6aa8f0; }
+#hv-heat.on .hv-coil-h { fill: rgba(232,102,58,.20); stroke: #e8663a; }
+#hv-heat.on .hv-coil-pipe { stroke: #ffab7a; }
+/* supply fan */
+.hv-fan-ring { fill: #10151c; stroke: var(--border-2); stroke-width: 1.5; }
+.hv-fan-hub { fill: #5b6675; }
+.hv-fan-blades { fill: #46505f; transform-box: fill-box; transform-origin: center; transition: fill .3s; }
+#hv-fan.on .hv-fan-blades { fill: #8fa0b4; animation: hvspin 1.1s linear infinite; }
+/* zone + thermometer */
+.hv-zone { fill: #11161d; stroke: var(--border-2); stroke-width: 1.5; }
+.hv-zone-tag { fill: var(--muted); font-family: var(--mono); font-size: 10px; letter-spacing: .06em; }
+.hv-therm-track { fill: #0e1319; stroke: #232b36; stroke-width: 1; }
+.hv-therm-fill { transition: y .6s ease, height .6s ease, fill .4s; }
+.hv-therm-bulb { transition: fill .4s; }
+.hv-ok   { fill: var(--accent-2); }   /* teal - in band */
+.hv-warm { fill: var(--warn); }        /* amber - above setpoint */
+.hv-hot  { fill: var(--bad); }         /* red - overheating */
+.hv-therm-alarm { stroke: var(--bad); stroke-width: 1.5; stroke-dasharray: 5 4; }
+.hv-therm-set { stroke: var(--faint); stroke-width: 1; stroke-dasharray: 3 4; opacity: .7; }
+.hv-tick { fill: var(--muted); font-family: var(--mono); font-size: 9px; }
+/* occupants */
+.hv-occ-dot { fill: #3a4250; transition: fill .4s; }
+.hv-distress .hv-occ-dot { fill: var(--bad); animation: hvpulse 1s ease-in-out infinite; }
+/* DDC banner */
+.hv-ddc-bg { fill: rgba(63,185,80,.12); stroke: var(--ok); stroke-width: 1; transition: fill .3s, stroke .3s; }
+.hv-ddc-bg.seized { fill: rgba(200,68,63,.16); stroke: var(--bad); }
+.hv-ddc-t { fill: #dfe7ef; font-family: var(--mono); font-size: 10px; letter-spacing: .08em; }
+@keyframes hvspin { to { transform: rotate(360deg); } }
+@keyframes hvflow { to { stroke-dashoffset: -20; } }
+@keyframes hvpulse { 0%,100% { opacity: 1; } 50% { opacity: .4; } }
+
+/* --- vehicle CAN bus: analog instrument cluster (needle speedometer + G-meter) --- */
+.veh-svg { width: 100%; height: auto; }
+.veh-tick { stroke: #6b7480; }
+.veh-tick.maj { stroke: #cfd6de; stroke-width: 2.4; stroke-linecap: round; }
+.veh-tick.min { stroke: #6b7480; stroke-width: 1; }
+.veh-num { fill: #c3cad3; font-family: var(--mono); font-size: 12px; text-anchor: middle; }
+.veh-gtick { fill: var(--muted); font-family: var(--mono); font-size: 8px; letter-spacing: .1em; text-anchor: middle; }
+.veh-cap { fill: var(--muted); font-family: var(--mono); font-size: 10px; letter-spacing: .12em; text-anchor: middle; }
+.veh-dig { fill: var(--text); font-family: var(--mono); font-weight: 600; font-size: 30px; text-anchor: middle; font-variant-numeric: tabular-nums; }
+.veh-band { fill: none; stroke-linecap: butt; }
+.veh-band.warn  { stroke: var(--warn); stroke-width: 5; opacity: .85; }
+.veh-band.red   { stroke: var(--bad);  stroke-width: 5; }
+.veh-band.brake { stroke: var(--accent); stroke-width: 4; opacity: .8; }
+.veh-band.accel { stroke: var(--warn);   stroke-width: 4; opacity: .8; }
+.veh-needle { transition: transform .5s cubic-bezier(.34,1.15,.5,1); transform-box: view-box; }
+.veh-needle-body { fill: #e7ebf0; stroke: #aeb6bf; stroke-width: .4; filter: drop-shadow(0 1px 1px rgba(0,0,0,.6)); transition: fill .3s; }
+.veh-needle-body.warm { fill: var(--warn); stroke: #b57e1f; }
+.veh-needle-body.hot  { fill: var(--bad);  stroke: #a5322d; }
+.veh-needle-body.gm { fill: #d7dce2; }
+.veh-tag { fill: var(--bad); font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: .08em; transition: opacity .3s; }
+
+/* --- traffic-signal intersection (NTCIP / SNMP signal override) --- */
+.sig-svg { width: 100%; height: auto; }
+.sig-ground { fill: #0c0e10; }
+.sig-road { fill: #17191d; }
+.sig-lane { stroke: #c9a227; stroke-width: 2.5; stroke-dasharray: 12 10; opacity: .65; }
+.sig-stop { fill: #d6dbe0; opacity: .5; }
+.sig-visor { fill: #23282f; }
+.sig-head { fill: #0a0c0e; stroke: #2a2f37; stroke-width: 1; }
+.sig-lamp { transition: opacity .25s ease, filter .25s ease; }
+.sig-lamp.off { opacity: .13; }
+.sig-red { fill: #cf453f; }   .sig-red.on   { opacity: 1; }
+.sig-amber { fill: #d69a2f; } .sig-amber.on { opacity: 1; }
+.sig-green { fill: #3fa85a; } .sig-green.on { opacity: 1; }
+.sig-dir { fill: var(--muted); font-family: var(--mono); font-size: 12px; text-anchor: middle; }
+.sig-hazard { fill: var(--bad); transition: opacity .3s; }
+.sig-hazard.active { animation: sig-flash .7s steps(1) infinite; }
+@keyframes sig-flash { 0%,100% { opacity: .34; } 50% { opacity: .08; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .viz-banner.critical { animation: none; }
+  .ro-v.injected, .cent-hmi.injected { animation: none; }
+  .h-pump.running .h-imp, .h-pipe.flowing { animation: none; }
+  .sis-pipe.flowing, .sis-loop.active, .sis-burst path { animation: none; }
+  .cent-spin, .cent.over .cent-rotor { animation: none; }
+  .ut-pump.running .ut-imp, .ut-pipe.flowing { animation: none; }
+  .sn-node.live { animation: none; }
+  .veh-needle { transition: none; }
+  .sig-hazard.active { animation: none; }
+  #hv-fan.on .hv-fan-blades, .hv-air.flow, .hv-air.flow-cold, .hv-air.flow-hot,
+  .hv-distress .hv-occ-dot { animation: none; }
+}

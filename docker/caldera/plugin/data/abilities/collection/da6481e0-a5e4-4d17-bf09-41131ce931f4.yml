@@ -1,0 +1,18 @@
+---
+
+- id: da6481e0-a5e4-4d17-bf09-41131ce931f4
+  name: mrhOTshOT - Modbus Read Coils (heating, unit 11)
+  description: |
+    Read the pump / valve / auto-mode coils from the lab heating PLC
+    (ENCO ENC-12X emulation on plc-heating, Modbus unit id 11). Recon of
+    current process state before manipulation.
+  tactic: collection
+  technique_id: T0861
+  technique_name: Point & Tag Identification
+  executors:
+  - platform: linux
+    name: sh
+    command: >
+      ./modbus_cli #{modbus.server.ip} --port #{modbus.server.port} read_c #{modbus.read_coil.start} #{modbus.read_coil.count} -d #{modbus.device.id}
+    payloads:
+    - modbus_cli

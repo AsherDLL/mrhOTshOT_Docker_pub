@@ -1,0 +1,59 @@
+order: 14
+id: crashoverride
+name: CrashOverride
+family: CrashOverride / Industroyer (2016)
+year: '2016'
+protocol: IEC 61850 / GOOSE (TCP/8102)
+target: PLC-2 Power Substation ({power}:8102)
+desc: The 2016 Industroyer malware that blacked out Kiev - the original 'CrashOverride'. Its IEC 61850
+  GOOSE module injected fake breaker-trip commands with spoofed stNum. GOOSE has no authentication - any
+  frame with a higher sequence number wins.
+color: '#e91e63'
+briefing:
+- REAL MALWARE - CrashOverride / Industroyer (Sandworm/GRU, December 2016)
+- Caused the December 17, 2016 Kiev power blackout - first malware to directly
+- 'attack power grid infrastructure at the substation level. Four protocol modules:'
+- IEC-104, IEC 61850 GOOSE, OPC DA, DNP3. This is the GOOSE module.
+- GOOSE (Generic Object-Oriented Substation Events) has no authentication.
+- Attacker injects GOOSE frames with higher stNum (state number) - all receivers
+- treat it as the authoritative state, accepting fake circuit breaker trip commands.
+- ''
+- WHAT WE ARE DOING
+- 1. MMS connection to IEC 61850 server (TCP 8102)
+- 2. Identify logical nodes - discover XCBR (circuit breakers), CSWI (switches)
+- 3. Read current switch states - map what's open/closed
+- '4. GOOSE injection: craft Ethernet frames with stNum > observed maximum'
+- '   - GoCB reference: matching the substation''s dataset subscription'
+- '   - BOOLEAN trip signal: TRUE to all XCBR logical nodes'
+- '5. Persist: flood GOOSE frames at 1ms intervals to maintain override'
+- 'VISIBLE IMPACT: Simulated breaker trips, power substation offline'
+- ''
+- ICS MITRE ATT&CK
+- T0855  Unauthorized Command Message (GOOSE injection)
+- T0830  Adversary-in-the-Middle (GOOSE has no auth)
+- T0813  Denial of Control (stNum flood prevents recovery)
+- T0879  Damage to Property (breaker cycling → transformer damage)
+cmd:
+- $PY
+- $SIM/crashoverride/simulation.py
+- --target
+- '{power}'
+- --port
+- '8102'
+- --duration
+- '15'
+cmd_lab:
+- $PY
+- $SIM/crashoverride/simulation.py
+- --target
+- '{power}'
+- --port
+- '8102'
+- --duration
+- '90'
+watch:
+  plc: power
+  proto: iec104
+  kind: power
+  restore: power
+it_phase: $SCRIPTS/crashoverride_it_phase.py

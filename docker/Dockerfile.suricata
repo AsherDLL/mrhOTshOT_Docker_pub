@@ -1,0 +1,12 @@
+# mrhOTshOT OT detection sensor - Suricata IDS on a passive tap.
+# Extends the upstream Suricata image with the lab's multi-bridge entrypoint. Same
+# "extend a stock image" pattern as docker/Dockerfile.fuxa. The OT ruleset is NOT
+# baked in - it is bind-mounted read-only (docker/sensor.yml) so it stays editable
+# without a rebuild.
+FROM jasonish/suricata:latest
+
+COPY docker/suricata/entrypoint.sh /usr/local/bin/sensor-entrypoint.sh
+COPY docker/suricata/logrotate.sh /usr/local/bin/sensor-logrotate.sh
+RUN chmod +x /usr/local/bin/sensor-entrypoint.sh /usr/local/bin/sensor-logrotate.sh
+
+ENTRYPOINT ["/usr/local/bin/sensor-entrypoint.sh"]

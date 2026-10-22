@@ -1,0 +1,35 @@
+# mrhOTshOT - project tooling config (Phase 0 hygiene scaffolding).
+# Canonical code root is final_things/iec104_water_tank/ (see SETUP.md / roadmap).
+# Runtime deps live in requirements.txt; dev/test deps in requirements-dev.txt.
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+# Default run = fast unit tests. `make test-int` overrides addopts to include
+# integration tests (which need the docker lab; they self-skip if it's down).
+addopts = "-m 'not integration'"
+# The codebase uses CWD-relative imports (from common.config import *,
+# from server.plant import ...). Put the canonical root and its server/ pkg on
+# the path so tests import cleanly without each file hand-editing sys.path.
+pythonpath = [
+    "final_things/iec104_water_tank",
+    "final_things/iec104_water_tank/server",
+]
+testpaths = ["final_things/iec104_water_tank/tests"]
+markers = [
+    "integration: needs a live target server (auto-skips when unreachable)",
+    "docker: needs a working Docker daemon (auto-skips when absent)",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+# F403/F405: this codebase intentionally uses `from common.config import *`.
+# E501: line length handled by black, not enforced as an error here.
+ignore = ["E501", "F403", "F405"]
+
+[tool.black]
+line-length = 100
+target-version = ["py312"]

@@ -1,0 +1,866 @@
+# XSIAM Rule Configuration for FrostyGoop Detection
+# Import these rules into Cortex XSIAM for automated threat detection
+# Version: 1.0
+# Date: 2026-01-23
+
+---
+# BIOC RULES
+---
+
+bioc_rules:
+  - rule_id: "BIOC-FG-001"
+    name: "FrostyGoop - ICS Multi-Protocol Port Scan"
+    description: "Detects scanning of multiple ICS/SCADA protocol ports from a single source"
+    severity: "High"
+    risk_score: 75
+    enabled: true
+
+    mitre_attack:
+      tactics:
+        - "Discovery"
+      techniques:
+        - "T1046" # Network Service Discovery
+        - "T1595.002" # Active Scanning: Vulnerability Scanning
+
+    detection_logic:
+      event_type: "network_connection"
+      conditions:
+        - field: "destination_port"
+          operator: "in"
+          value: [102, 502, 2404, 4840, 44818]
+        - field: "unique_destination_ports"
+          operator: ">="
+          value: 3
+        - field: "timeframe"
+          operator: "<="
+          value: "60s"
+
+      aggregation:
+        group_by: ["source_ip", "destination_ip"]
+        window: "60s"
+
+    response_actions:
+      - type: "create_case"
+        severity: "High"
+        assignee: "SOC_Team"
+      - type: "alert"
+        channels: ["email", "syslog"]
+      - type: "tag_asset"
+        tags: ["ics_scanner", "potential_threat"]
+
+  - rule_id: "BIOC-FG-002"
+    name: "FrostyGoop - Modbus Slave ID Enumeration"
+    description: "Detects enumeration of Modbus slave/unit IDs on target devices"
+    severity: "High"
+    risk_score: 70
+    enabled: true
+
+    mitre_attack:
+      tactics:
+        - "Discovery"
+      techniques:
+        - "T1046" # Network Service Discovery
+
+    detection_logic:
+      event_type: "modbus_traffic"
+      conditions:
+        - field: "protocol"
+          operator: "=="
+          value: "modbus_tcp"
+        - field: "modbus_function_code"
+          operator: "in"
+          value: [3, 4]
+        - field: "unique_slave_ids"
+          operator: ">="
+          value: 3
+        - field: "timeframe"
+          operator: "<="
+          value: "30s"
+
+      aggregation:
+        group_by: ["source_ip", "destination_ip"]
+        window: "30s"
+
+    response_actions:
+      - type: "create_case"
+        severity: "High"
+      - type: "alert"
+        message: "Modbus slave enumeration detected - verify authorization"
+
+  - rule_id: "BIOC-FG-003"
+    name: "FrostyGoop - Rapid Modbus Control Manipulation"
+    description: "Detects rapid Modbus write operations to control coils/registers"
+    severity: "Critical"
+    risk_score: 95
+    enabled: true
+
+    mitre_attack:
+      tactics:
+        - "Execution"
+        - "Impact"
+      techniques:
+        - "T0836" # Modify Parameter
+        - "T0855" # Unauthorized Command Message
+
+    detection_logic:
+      event_type: "modbus_traffic"
+      conditions:
+        - field: "protocol"
+          operator: "=="
+          value: "modbus_tcp"
+        - field: "modbus_function_code"
+          operator: "in"
+          value: [5, 15] # Write Single/Multiple Coils
+        - field: "modbus_address"
+          operator: "between"
+          value: [0, 10]
+        - field: "write_operations_count"
+          operator: ">="
+          value: 3
+        - field: "timeframe"
+          operator: "<="
+          value: "5s"
+
+      aggregation:
+        group_by: ["source_ip", "destination_ip", "modbus_slave_id"]
+        window: "5s"
+
+    response_actions:
+      - type: "create_case"
+        severity: "Critical"
+        priority: "P1"
+        assignee: "OT_Security_Team"
+      - type: "alert"
+        channels: ["sms", "email", "pagerduty"]
+        message: "CRITICAL: Rapid Modbus control manipulation detected - potential attack"
+      - type: "capture_pcap"
+        duration: "300s"
+
+  - rule_id: "BIOC-FG-004"
+    name: "FrostyGoop - Persistent Control State Manipulation"
+    description: "Detects continuous Modbus writes maintaining attack state"
+    severity: "Critical"
+    risk_score: 98
+    enabled: true
+
+    mitre_attack:
+      tactics:
+        - "Persistence"
+        - "Impact"
+      techniques:
+        - "T0836" # Modify Parameter
+        - "T0858" # Change Operating Mode
+
+    detection_logic:
+      event_type: "modbus_traffic"
+      conditions:
+        - field: "protocol"
+          operator: "=="
+          value: "modbus_tcp"
+        - field: "modbus_function_code"
+          operator: "in"
+          value: [5, 6]
+        - field: "command_repetition"
+          operator: "=="
+          value: true # Same function_code + address + value
+        - field: "repetition_count"
+          operator: ">="
+          value: 5
+        - field: "timeframe"
+          operator: ">="
+          value: "25s"
+        - field: "interval_regularity_variance"
+          operator: "<"
+          value: 0.20 # Less than 20% variance
+
+      aggregation:
+        group_by: ["source_ip", "destination_ip", "command_signature"]
+        window: "60s"
+
+    response_actions:
+      - type: "create_case"
+        severity: "Critical"
+        priority: "P1"
+        assignee: "OT_Security_Team"
+        escalate_to: "Incident_Commander"
+      - type: "alert"
+        channels: ["sms", "email", "pagerduty", "teams"]
+        message: "CRITICAL ATTACK IN PROGRESS: Persistent Modbus manipulation detected. Isolate PLC immediately."
+      - type: "capture_pcap"
+        duration: "600s"
+      - type: "block_ip" # Optional - requires firewall integration
+        target: "source_ip"
+
+  - rule_id: "BIOC-FG-005"
+    name: "FrostyGoop - Automation Disable Before Attack"
+    description: "Detects disabling of PLC automation followed by control manipulation"
+    severity: "Critical"
+    risk_score: 92
+    enabled: true
+
+    mitre_attack:
+      tactics:
+        - "Execution"
+        - "Impact"
+      techniques:
+        - "T0858" # Change Operating Mode
+        - "T0836" # Modify Parameter
+
+    detection_logic:
+      event_type: "modbus_traffic"
+      sequence:
+        - step: 1
+          conditions:
+            - field: "modbus_function_code"
+              operator: "=="
+              value: 5
+            - field: "modbus_address"
+              operator: "=="
+              value: 3 # Auto mode coil
+            - field: "modbus_value"
+              operator: "=="
+              value: false # Manual mode
+
+        - step: 2
+          conditions:
+            - field: "modbus_function_code"
+              operator: "in"
+              value: [5, 15]
+            - field: "modbus_address"
+              operator: "in"
+              value: [0, 1, 2] # Valve/pump coils
+          max_time_between: "10s"
+
+      aggregation:
+        group_by: ["source_ip", "destination_ip"]
+
+    response_actions:
+      - type: "create_case"
+        severity: "Critical"
+        priority: "P1"
+      - type: "alert"
+        message: "Unauthorized mode change to MANUAL followed by valve commands - FrostyGoop attack pattern"
+
+  - rule_id: "BIOC-FG-006"
+    name: "FrostyGoop - Malicious Configuration File Loading"
+    description: "Detects loading of Modbus attack configuration files"
+    severity: "High"
+    risk_score: 85
+    enabled: true
+
+    mitre_attack:
+      tactics:
+        - "Execution"
+      techniques:
+        - "T1005" # Data from Local System
+        - "T1027.010" # Obfuscated Files or Information
+
+    detection_logic:
+      event_type: "file_access"
+      sequence:
+        - step: 1
+          conditions:
+            - field: "file_extension"
+              operator: "=="
+              value: ".json"
+            - field: "file_content_keywords"
+              operator: "contains_any"
+              value: ["function_code", "modbus", "coil", "register", "address", "slave_id"]
+            - field: "file_path"
+              operator: "regex"
+              value: ".*(frostygoop|config|modbus|attack).*"
+
+        - step: 2
+          conditions:
+            - field: "event_type"
+              operator: "=="
+              value: "network_connection"
+            - field: "destination_port"
+              operator: "=="
+              value: 502
+          max_time_between: "60s"
+
+      aggregation:
+        group_by: ["host_ip", "process_name"]
+
+    response_actions:
+      - type: "create_case"
+        severity: "High"
+      - type: "alert"
+        message: "Modbus configuration file loaded followed by Modbus connection"
+      - type: "quarantine_file"
+        file_path: "${file_path}"
+
+  - rule_id: "BIOC-FG-007"
+    name: "FrostyGoop - Water Tank Overflow Attack Signature"
+    description: "Detects specific command sequence for tank overflow attack"
+    severity: "Critical"
+    risk_score: 100
+    enabled: true
+
+    mitre_attack:
+      tactics:
+        - "Impact"
+      techniques:
+        - "T0831" # Manipulation of Control
+        - "T0836" # Modify Parameter
+
+    detection_logic:
+      event_type: "modbus_traffic"
+      sequence:
+        - step: 1
+          name: "manual_mode"
+          conditions:
+            - field: "modbus_address"
+              operator: "=="
+              value: 3
+            - field: "modbus_value"
+              operator: "=="
+              value: false
+
+        - step: 2
+          name: "inlet_open"
+          conditions:
+            - field: "modbus_address"
+              operator: "=="
+              value: 0
+            - field: "modbus_value"
+              operator: "=="
+              value: true
+
+        - step: 3
+          name: "outlet_closed"
+          conditions:
+            - field: "modbus_address"
+              operator: "=="
+              value: 1
+            - field: "modbus_value"
+              operator: "=="
+              value: false
+
+        max_time_between: "5s"
+        persistence_check:
+          duration: "30s"
+          same_state_maintained: true
+
+      aggregation:
+        group_by: ["source_ip", "destination_ip"]
+
+    response_actions:
+      - type: "create_case"
+        severity: "Critical"
+        priority: "P0"
+        assignee: "Incident_Commander"
+      - type: "alert"
+        channels: ["sms", "email", "pagerduty", "teams", "phone_call"]
+        message: "EMERGENCY: Tank overflow attack detected. Execute emergency shutdown immediately."
+      - type: "notify"
+        teams: ["SOC", "OT_Security", "Plant_Operations"]
+      - type: "capture_pcap"
+        duration: "900s"
+      - type: "block_ip"
+        target: "source_ip"
+
+  - rule_id: "BIOC-FG-008"
+    name: "FrostyGoop - Suspicious Process Execution"
+    description: "Detects execution of FrostyGoop-related Python scripts"
+    severity: "High"
+    risk_score: 80
+    enabled: true
+
+    mitre_attack:
+      tactics:
+        - "Execution"
+      techniques:
+        - "T1059.006" # Command and Scripting Interpreter: Python
+
+    detection_logic:
+      event_type: "process_execution"
+      conditions:
+        - field: "process_name"
+          operator: "in"
+          value: ["python", "python3", "python.exe"]
+        - field: "command_line"
+          operator: "contains_any"
+          value: ["frostygoop", "modbus", "attack", "simulation", "iec104", "--port 502", "--config"]
+
+      enrichment:
+        - check_parent_process: true
+        - check_file_hash: true
+        - check_network_connections: true
+
+    response_actions:
+      - type: "create_case"
+        severity: "High"
+      - type: "alert"
+        message: "Suspicious ICS attack script executed"
+      - type: "terminate_process"
+        process_id: "${process_id}"
+      - type: "isolate_host"
+        host_ip: "${host_ip}"
+      - type: "collect_forensics"
+        artifacts: ["memory_dump", "process_tree", "network_connections"]
+
+---
+# IOT SECURITY CUSTOM RULES
+---
+
+iot_security_rules:
+  - rule_id: "IOT-FG-001"
+    name: "Modbus Write Frequency Anomaly - FrostyGoop Indicator"
+    category: "Protocol Anomaly"
+    protocol: "modbus_tcp"
+    severity: "High"
+    enabled: true
+
+    detection_logic:
+      type: "statistical_anomaly"
+      baseline:
+        learning_period_days: 7
+        minimum_samples: 1000
+        metric: "modbus_write_operations_per_minute"
+        function_codes: [5, 6, 15, 16]
+
+      anomaly_threshold:
+        method: "standard_deviation"
+        sigma: 3
+        sustained_duration_seconds: 30
+
+      conditions:
+        - field: "write_frequency"
+          operator: ">"
+          value: "baseline_mean + (3 * baseline_stddev)"
+
+    alert_configuration:
+      message: "Abnormal Modbus write frequency detected - possible FrostyGoop attack"
+      include_fields:
+        - source_ip
+        - destination_ip
+        - modbus_unit_id
+        - function_codes_used
+        - write_operations_count
+        - baseline_comparison
+        - deviation_percentage
+
+    response_actions:
+      - create_incident
+      - tag_asset: "potential_compromise"
+
+  - rule_id: "IOT-FG-002"
+    name: "Unauthorized Modbus Client - FrostyGoop Source Detection"
+    category: "Access Control Violation"
+    protocol: "modbus_tcp"
+    severity: "Critical"
+    enabled: true
+
+    detection_logic:
+      type: "whitelist_violation"
+
+      whitelist:
+        type: "ip_address"
+        name: "authorized_modbus_clients"
+        sources:
+          - category: "HMI_workstations"
+            ip_ranges: ["10.0.10.0/24"]
+          - category: "SCADA_servers"
+            ip_ranges: ["10.0.20.0/24"]
+          - category: "maintenance_laptops"
+            ip_addresses: ["10.0.30.10", "10.0.30.11"]
+
+      conditions:
+        - field: "source_ip"
+          operator: "not_in"
+          value: "whitelist"
+        - field: "modbus_function_code"
+          operator: "in"
+          value: [5, 6, 15, 16] # Write operations only
+        - field: "connection_state"
+          operator: "=="
+          value: "established"
+
+    alert_configuration:
+      message: "Modbus write operation from unauthorized source - FrostyGoop indicator"
+      include_fields:
+        - unauthorized_source_ip
+        - target_plc_ip
+        - modbus_unit_id
+        - function_code
+        - coil_register_addresses
+        - geo_location
+
+    response_actions:
+      - create_critical_incident
+      - block_source_ip
+      - notify_ot_team
+      - capture_pcap
+
+  - rule_id: "IOT-FG-003"
+    name: "Control Coil Manipulation - FrostyGoop Attack Pattern"
+    category: "Process Manipulation"
+    protocol: "modbus_tcp"
+    severity: "Critical"
+    enabled: true
+    asset_type: "water_tank_plc"
+
+    detection_logic:
+      type: "pattern_matching"
+
+      pattern_1:
+        name: "rapid_coil_writes"
+        conditions:
+          - field: "modbus_address"
+            operator: "in"
+            value: [0, 1, 2, 3]
+          - field: "modbus_function_code"
+            operator: "in"
+            value: [5, 15]
+          - field: "write_count"
+            operator: ">="
+            value: 3
+          - field: "timeframe"
+            operator: "<="
+            value: "10s"
+
+      pattern_2:
+        name: "overflow_sequence"
+        sequence:
+          - coil_3: false # Manual mode
+          - coil_0: true  # Inlet open
+          - coil_1: false # Outlet closed
+        sequence_window_seconds: 10
+
+    alert_configuration:
+      message: "Critical control manipulation detected - FrostyGoop attack signature"
+      include_fields:
+        - source_ip
+        - plc_ip
+        - coils_modified
+        - values_written
+        - sequence_timeline
+
+    response_actions:
+      - create_critical_incident
+      - alert_soc
+      - alert_ot_team
+      - alert_plant_operations
+      - recommend_action: "Verify PLC state and consider isolation"
+
+  - rule_id: "IOT-FG-004"
+    name: "Extended Modbus Session - FrostyGoop Persistence"
+    category: "Session Anomaly"
+    protocol: "modbus_tcp"
+    severity: "High"
+    enabled: true
+
+    detection_logic:
+      type: "session_analysis"
+
+      baseline:
+        learning_period_days: 7
+        metric: "session_duration"
+        threshold_percentile: 95
+
+      anomaly_conditions:
+        - field: "session_duration"
+          operator: ">="
+          value: "60s"
+        - field: "repeated_commands"
+          operator: "=="
+          value: true
+        - field: "command_pattern"
+          operator: "=="
+          value: "identical_writes"
+        - field: "write_interval_variance"
+          operator: "<"
+          value: 0.20
+
+    alert_configuration:
+      message: "Extended Modbus session with repetitive writes - FrostyGoop persistence"
+      include_fields:
+        - source_ip
+        - destination_ip
+        - session_duration
+        - command_repetition_count
+        - command_interval_mean
+        - command_interval_variance
+
+    response_actions:
+      - create_incident
+      - capture_pcap
+
+  - rule_id: "IOT-FG-005"
+    name: "ICS Multi-Protocol Scanning - FrostyGoop Reconnaissance"
+    category: "Reconnaissance"
+    protocol: "tcp"
+    severity: "High"
+    enabled: true
+
+    detection_logic:
+      type: "network_reconnaissance"
+
+      conditions:
+        - field: "source_ip"
+          operator: "=="
+          value: "single_ip"
+        - field: "destination_ports"
+          operator: "in"
+          value: [102, 502, 2404, 4840, 44818]
+        - field: "unique_ports_contacted"
+          operator: ">="
+          value: 3
+        - field: "timeframe"
+          operator: "<="
+          value: "60s"
+        - field: "connection_duration"
+          operator: "<"
+          value: "5s"
+
+      pattern_indicators:
+        - sequential_port_probing: true
+        - syn_only_connections: true
+        - connection_attempts_per_port: 1-3
+
+    alert_configuration:
+      message: "ICS/SCADA multi-protocol scanning detected - FrostyGoop reconnaissance phase"
+      include_fields:
+        - scanner_ip
+        - target_ips
+        - ports_scanned
+        - scan_timeline
+        - response_codes
+
+    response_actions:
+      - create_incident
+      - monitor_source_ip
+      - threat_intel_lookup
+
+  - rule_id: "IOT-FG-006"
+    name: "Unsafe Valve Configuration - FrostyGoop Overflow Attack"
+    category: "Process Safety"
+    protocol: "modbus_tcp"
+    severity: "Critical"
+    enabled: true
+    asset_type: "water_tank_plc"
+
+    detection_logic:
+      type: "process_safety_monitoring"
+
+      monitored_states:
+        - coil_0: "inlet_valve"
+        - coil_1: "outlet_valve"
+        - coil_3: "auto_mode"
+
+      unsafe_condition:
+        conditions:
+          - inlet_valve: true  # OPEN
+          - outlet_valve: false # CLOSED
+          - auto_mode: false   # MANUAL
+        sustained_duration_seconds: 10
+
+      impact_assessment:
+        predicted_outcome: "tank_overflow"
+        calculate_time_to_critical: true
+        based_on: "inlet_flow_rate"
+
+    alert_configuration:
+      message: "CRITICAL: Unsafe valve state - Tank overflow imminent (FrostyGoop attack)"
+      include_fields:
+        - current_water_level
+        - inlet_valve_state
+        - outlet_valve_state
+        - control_mode
+        - time_in_unsafe_state
+        - estimated_time_to_overflow
+
+    response_actions:
+      - create_critical_incident
+      - emergency_notification: true
+      - alert_soc
+      - alert_ot_team
+      - alert_plant_operations
+      - recommend_action: "IMMEDIATE VALVE OVERRIDE REQUIRED"
+
+  - rule_id: "IOT-FG-007"
+    name: "Modbus Exception Spike - FrostyGoop Enumeration"
+    category: "Protocol Anomaly"
+    protocol: "modbus_tcp"
+    severity: "Medium"
+    enabled: true
+
+    detection_logic:
+      type: "error_rate_monitoring"
+
+      baseline:
+        learning_period_days: 7
+        metric: "modbus_exception_responses_per_minute"
+        exception_codes: [1, 2, 3, 4, 5, 6]
+
+      anomaly_conditions:
+        - field: "exception_rate"
+          operator: ">"
+          value: "baseline_mean + (2 * baseline_stddev)"
+        - or:
+            field: "exception_count"
+            operator: ">="
+            value: 10
+            timeframe: "60s"
+
+    alert_configuration:
+      message: "Modbus exception rate spike - Possible enumeration/reconnaissance"
+      include_fields:
+        - source_ip
+        - destination_ip
+        - exception_codes
+        - exception_count
+        - failed_slave_ids
+        - failed_addresses
+
+    response_actions:
+      - create_incident
+      - monitor_source_ip
+
+---
+# ALERT ROUTING CONFIGURATION
+---
+
+alert_routing:
+  - severity: "Critical"
+    priority: "P0"
+    channels:
+      - type: "sms"
+        recipients: ["soc_oncall", "ot_manager", "incident_commander"]
+      - type: "email"
+        recipients: ["soc@company.com", "ot-security@company.com"]
+      - type: "pagerduty"
+        service: "ot_critical_alerts"
+      - type: "teams"
+        channel: "ot-security-critical"
+
+    escalation:
+      if_not_acknowledged_minutes: 5
+      escalate_to: ["security_director", "ciso"]
+
+  - severity: "High"
+    priority: "P1"
+    channels:
+      - type: "email"
+        recipients: ["soc@company.com", "ot-security@company.com"]
+      - type: "teams"
+        channel: "ot-security-alerts"
+
+    escalation:
+      if_not_acknowledged_minutes: 15
+      escalate_to: ["soc_lead", "ot_security_lead"]
+
+  - severity: "Medium"
+    priority: "P2"
+    channels:
+      - type: "email"
+        recipients: ["soc@company.com"]
+      - type: "teams"
+        channel: "ot-security-monitoring"
+
+---
+# AUTOMATED RESPONSE ACTIONS
+---
+
+automated_responses:
+  - trigger: "BIOC-FG-007" # Tank overflow attack
+    actions:
+      - action: "block_ip"
+        target: "source_ip"
+        duration: "permanent"
+        firewall: "ot_perimeter_firewall"
+
+      - action: "isolate_asset"
+        target: "destination_ip"
+        method: "acl_deny_all"
+        exception: "emergency_override_console"
+
+      - action: "capture_traffic"
+        duration: "900s"
+        filter: "modbus_tcp"
+
+      - action: "execute_playbook"
+        playbook: "emergency_plc_shutdown"
+
+  - trigger: "BIOC-FG-004" # Persistent manipulation
+    actions:
+      - action: "block_ip"
+        target: "source_ip"
+        duration: "24h"
+
+      - action: "capture_traffic"
+        duration: "600s"
+
+      - action: "alert_escalation"
+        level: "critical"
+
+  - trigger: "IOT-FG-002" # Unauthorized source
+    actions:
+      - action: "block_ip"
+        target: "source_ip"
+        duration: "1h"
+        require_approval: false
+
+      - action: "create_case"
+        severity: "critical"
+
+---
+# WHITELISTS AND EXCEPTIONS
+---
+
+whitelists:
+  authorized_modbus_clients:
+    description: "Approved Modbus TCP clients"
+    type: "ip_address"
+    entries:
+      - ip: "10.0.10.5"
+        description: "HMI Workstation #1"
+        owner: "Plant Operations"
+
+      - ip: "10.0.10.6"
+        description: "HMI Workstation #2"
+        owner: "Plant Operations"
+
+      - ip: "10.0.20.10"
+        description: "SCADA Server Primary"
+        owner: "IT Infrastructure"
+
+      - ip: "10.0.20.11"
+        description: "SCADA Server Backup"
+        owner: "IT Infrastructure"
+
+      - ip_range: "10.0.30.0/24"
+        description: "Maintenance VLAN"
+        owner: "OT Engineering"
+        requires_approval: true
+
+  maintenance_windows:
+    description: "Scheduled maintenance periods"
+    suppression_rules:
+      - name: "Weekly PLC Testing"
+        schedule: "Wednesday 02:00-04:00 UTC"
+        suppress_rules: ["IOT-FG-001", "IOT-FG-004"]
+
+      - name: "Monthly Security Assessment"
+        schedule: "First Sunday 00:00-06:00 UTC"
+        suppress_rules: ["BIOC-FG-001", "BIOC-FG-002", "IOT-FG-005"]
+
+---
+# METADATA
+---
+
+metadata:
+  version: "1.0"
+  created_date: "2026-01-23"
+  last_updated: "2026-01-23"
+  author: "OT Security Team"
+  classification: "Internal - OT Security"
+  review_schedule: "Quarterly"
+
+  change_log:
+    - version: "1.0"
+      date: "2026-01-23"
+      changes: "Initial rule set creation for FrostyGoop detection"
+      author: "Security Analyst"
